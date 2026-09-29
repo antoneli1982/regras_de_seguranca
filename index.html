@@ -337,17 +337,17 @@
     }
     .slide .section-title{
       position:absolute;
-      top:118px;
-      font-size:22px;
+      top:103px;
+      font-size:21px;
       font-weight:800;
       letter-spacing:.7px;
     }
     .slide .left-heading{left:72px; color:var(--sese-green)}
     .slide .right-heading{right:72px; color:var(--sese-red)}
     .slide .section-title[contenteditable="true"]{
-      width:310px;
-      min-height:38px;
-      padding:6px 12px;
+      width:326px;
+      min-height:34px;
+      padding:4px 12px;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -379,8 +379,8 @@
     }
     .slide .divider{
       position:absolute;
-      top:108px;
-      bottom:66px;
+      top:96px;
+      bottom:50px;
       left:50%;
       width:4px;
       margin-left:-2px;
@@ -389,17 +389,17 @@
     }
     .hand-zone{
       position:absolute;
-      top:166px;
-      width:47%;
-      bottom:72px;
+      top:145px;
+      width:48%;
+      bottom:52px;
       display:flex;
       align-items:stretch;
       justify-content:center;
       gap:0;
-      padding:4px 10px;
+      padding:2px 8px;
     }
-    .hand-zone.left{left:1.5%}
-    .hand-zone.right{right:1.5%}
+    .hand-zone.left{left:1%}
+    .hand-zone.right{right:1%}
 
     .slide.only-correct .right-heading,
     .slide.only-correct .hand-zone.right,
@@ -413,8 +413,8 @@
       width:520px;
     }
     .slide.only-correct .hand-zone.left{
-      left:5%;
-      right:5%;
+      left:2.5%;
+      right:2.5%;
       width:auto;
     }
     .slide.only-correct .ok-badge{
@@ -427,56 +427,138 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      border-radius:14px;
-      background:transparent;
+      border-radius:12px;
+      background:rgba(255,255,255,.16);
       position:relative;
       overflow:hidden;
       cursor:pointer;
       transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
     .img-card:hover{
-      transform:translateY(-2px);
-      box-shadow:0 12px 28px rgba(15,23,42,.10);
+      transform:translateY(-1px);
+      box-shadow:0 10px 24px rgba(15,23,42,.09);
     }
-    .img-card img{
+    .img-card.placeholder{
+      border:2px dashed #c7ced8;
+      background:rgba(255,255,255,.34);
+      color:#6c7886;
+    }
+    .photo-grid{
+      width:100%;
+      height:100%;
+      display:grid;
+      gap:6px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-rows:repeat(2,minmax(0,1fr));
+    }
+    .photo-grid[data-count="1"]{
+      grid-template-columns:1fr;
+      grid-template-rows:1fr;
+    }
+    .photo-grid[data-count="2"]{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-rows:1fr;
+    }
+    .photo-grid[data-count="3"]{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-rows:repeat(2,minmax(0,1fr));
+    }
+    .photo-grid[data-count="3"] .photo-tile:first-child{
+      grid-row:1 / span 2;
+    }
+    .photo-grid[data-count="5"],
+    .photo-grid[data-count="6"]{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-rows:repeat(2,minmax(0,1fr));
+    }
+    .photo-tile{
+      min-width:0;
+      min-height:0;
+      position:relative;
+      overflow:hidden;
+      border-radius:10px;
+      background:#dfe4ea;
+    }
+    .photo-tile img{
       width:100%;
       height:100%;
       object-fit:cover;
       object-position:center;
       display:block;
     }
-    .img-card.placeholder{
-      border:2px dashed #c7ced8;
-      background:rgba(255,255,255,.35);
-      color:#6c7886;
-      font-size:12px;
+    .photo-remove{
+      position:absolute;
+      top:6px;
+      right:6px;
+      width:26px;
+      height:26px;
+      border:none;
+      border-radius:50%;
+      background:rgba(0,0,0,.62);
+      color:#fff;
+      font-size:16px;
+      font-weight:800;
+      line-height:26px;
+      padding:0;
       text-align:center;
+      cursor:pointer;
+      opacity:.86;
+      z-index:4;
+    }
+    .photo-remove:hover{
+      transform:none;
+      opacity:1;
+      background:rgba(177,26,32,.92);
+    }
+    .gallery-placeholder{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#7c8999;
+      font-size:12px;
       line-height:1.45;
-      padding:14px;
+      pointer-events:none;
+    }
+    .img-card.has-image .gallery-placeholder{
+      display:none;
     }
     .img-card .upload-callout{
       position:absolute;
-      left:50%;
-      bottom:14px;
-      transform:translateX(-50%);
+      right:8px;
+      top:8px;
+      background:rgba(20,101,234,.90);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.45);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.15px;
+      backdrop-filter:blur(5px);
+      white-space:nowrap;
+      z-index:5;
+      box-shadow:0 4px 12px rgba(15,23,42,.16);
+    }
+    .img-card.placeholder .upload-callout{
+      top:auto;
+      right:50%;
+      bottom:12px;
+      transform:translateX(50%);
       background:rgba(20,101,234,.10);
       color:var(--sese-blue);
-      border:1px solid rgba(20,101,234,.20);
-      padding:7px 12px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:700;
-      letter-spacing:.2px;
-      backdrop-filter: blur(4px);
-      white-space:nowrap;
+      border-color:rgba(20,101,234,.20);
+      box-shadow:none;
     }
-    .img-card.has-image .upload-callout{
-      opacity:0;
-      pointer-events:none;
+    body.tv-mode .photo-remove,
+    body.tv-mode .upload-callout{
+      display:none !important;
     }
         .ok-badge,.nok-badge{
       position:absolute;
-      bottom:12px;
+      bottom:2px;
       width:50%;
       display:flex;
       justify-content:center;
@@ -489,8 +571,8 @@
     .ok-badge img, .nok-badge img{
       display:block;
       width:auto;
-      max-width:150px;
-      height:58px;
+      max-width:138px;
+      height:46px;
       object-fit:contain;
       filter:drop-shadow(0 4px 12px rgba(0,0,0,.12));
     }
@@ -699,11 +781,11 @@
         <label>Logo da SESÉ</label>
         <input id="logoUpload" type="file" accept="image/*">
 
-        <label>Imagem lado esquerdo</label>
-        <input id="leftUpload" type="file" accept="image/*">
+        <label>Imagens lado esquerdo (até 6)</label>
+        <input id="leftUpload" type="file" accept="image/*" multiple>
 
-        <label>Imagem lado direito</label>
-        <input id="rightUpload" type="file" accept="image/*">
+        <label>Imagens lado direito (até 6)</label>
+        <input id="rightUpload" type="file" accept="image/*" multiple>
       </div>
 
       <div class="group">
@@ -770,18 +852,18 @@
           <div class="divider"></div>
 
           <div class="hand-zone left">
-            <div class="img-card placeholder" id="leftCard" role="button" tabindex="0" aria-label="Anexar imagem do modo correto">
-              <span>anexe a imagem do<br>modo correto</span>
-              <div class="upload-callout">Clique para anexar</div>
-              <img id="leftImage" style="display:none" alt="modo correto">
+            <div class="img-card placeholder" id="leftCard" role="button" tabindex="0" aria-label="Adicionar imagens do modo correto">
+              <div class="photo-grid" id="leftGallery" data-count="0"></div>
+              <div class="gallery-placeholder">anexe uma ou mais imagens<br>do modo correto</div>
+              <div class="upload-callout">+ Fotos</div>
             </div>
           </div>
 
           <div class="hand-zone right">
-            <div class="img-card placeholder" id="rightCard" role="button" tabindex="0" aria-label="Anexar imagem do modo incorreto">
-              <span>anexe a imagem do<br>modo incorreto</span>
-              <div class="upload-callout">Clique para anexar</div>
-              <img id="rightImage" style="display:none" alt="modo incorreto">
+            <div class="img-card placeholder" id="rightCard" role="button" tabindex="0" aria-label="Adicionar imagens do modo incorreto">
+              <div class="photo-grid" id="rightGallery" data-count="0"></div>
+              <div class="gallery-placeholder">anexe uma ou mais imagens<br>do modo incorreto</div>
+              <div class="upload-callout">+ Fotos</div>
             </div>
           </div>
 
@@ -793,8 +875,8 @@
           </div>
         </div>
       </div>
-      <input id="leftInlineUpload" type="file" accept="image/*" hidden>
-      <input id="rightInlineUpload" type="file" accept="image/*" hidden>
+      <input id="leftInlineUpload" type="file" accept="image/*" multiple hidden>
+      <input id="rightInlineUpload" type="file" accept="image/*" multiple hidden>
     </main>
   </div>
 
@@ -821,6 +903,8 @@
         logo: defaultLogo,
         leftImage: "",
         rightImage: "",
+        leftImages: [],
+        rightImages: [],
         showIncorrect: true
       }
     ];
@@ -832,6 +916,35 @@
 
     function current() {
       return pages[currentPage];
+    }
+
+    const MAX_IMAGES_PER_SIDE = 6;
+
+    function sideImages(page, side) {
+      const arrayKey = side + "Images";
+      const legacyKey = side + "Image";
+
+      if (!Array.isArray(page[arrayKey])) {
+        page[arrayKey] = page[legacyKey] ? [page[legacyKey]] : [];
+      } else if (page[arrayKey].length === 0 && page[legacyKey]) {
+        page[arrayKey] = [page[legacyKey]];
+      }
+
+      if (page[arrayKey].length > MAX_IMAGES_PER_SIDE) {
+        page[arrayKey] = page[arrayKey].slice(0, MAX_IMAGES_PER_SIDE);
+      }
+
+      return page[arrayKey];
+    }
+
+    function removeGalleryImage(side, index) {
+      const images = sideImages(current(), side);
+      if (index < 0 || index >= images.length) return;
+      images.splice(index, 1);
+      current()[side + "Image"] = images[0] || "";
+      renderPage();
+      if (typeof autoSaveProject === "function") autoSaveProject();
+      if (typeof scheduleCloudSave === "function") scheduleCloudSave();
     }
 
     function isIncorrectVisible(page = current()) {
@@ -923,28 +1036,46 @@
       $("heroLogo").src = p.logo || defaultLogo;
       const presentationLogo = $("presentationLogo");
       if (presentationLogo) presentationLogo.src = p.logo || defaultLogo;
-      renderImageCard("left", p.leftImage);
-      renderImageCard("right", p.rightImage);
+      renderImageGallery("left", sideImages(p, "left"));
+      renderImageGallery("right", sideImages(p, "right"));
     }
 
-    function renderImageCard(side, src) {
+    function renderImageGallery(side, images) {
       const card = $(side + "Card");
-      const img = $(side + "Image");
-      const placeholder = card.querySelector("span");
+      const grid = $(side + "Gallery");
+      if (!card || !grid) return;
 
-      if (src) {
-        card.classList.remove("placeholder");
-        card.classList.add("has-image");
+      const safeImages = Array.isArray(images) ? images.slice(0, MAX_IMAGES_PER_SIDE) : [];
+      grid.innerHTML = "";
+      grid.dataset.count = String(safeImages.length);
+
+      card.classList.toggle("placeholder", safeImages.length === 0);
+      card.classList.toggle("has-image", safeImages.length > 0);
+
+      safeImages.forEach((src, index) => {
+        const tile = document.createElement("div");
+        tile.className = "photo-tile";
+
+        const img = document.createElement("img");
         img.src = src;
-        img.style.display = "block";
-        if (placeholder) placeholder.style.display = "none";
-      } else {
-        card.classList.add("placeholder");
-        card.classList.remove("has-image");
-        img.src = "";
-        img.style.display = "none";
-        if (placeholder) placeholder.style.display = "block";
-      }
+        img.alt = (side === "left" ? "modo correto" : "modo incorreto") + " " + (index + 1);
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "photo-remove";
+        remove.textContent = "×";
+        remove.title = "Remover foto";
+        remove.setAttribute("aria-label", "Remover foto " + (index + 1));
+        remove.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          removeGalleryImage(side, index);
+        });
+
+        tile.appendChild(img);
+        tile.appendChild(remove);
+        grid.appendChild(tile);
+      });
     }
 
     function renderPagesList() {
@@ -1065,6 +1196,8 @@
       clone.title = "NOVA PÁGINA";
       clone.leftImage = "";
       clone.rightImage = "";
+      clone.leftImages = [];
+      clone.rightImages = [];
       pages.push(clone);
       currentPage = pages.length - 1;
   
@@ -1118,6 +1251,8 @@
       const p = current();
       p.leftImage = "";
       p.rightImage = "";
+      p.leftImages = [];
+      p.rightImages = [];
       renderPage();
       autoSaveProject();
     }
@@ -1392,28 +1527,61 @@
       reader.readAsDataURL(file);
     }
 
-    function applyImageToSide(side, file) {
-      if (!file) return;
-      readFileAsDataURL(file, (result) => {
-        current()[side + "Image"] = result;
+    function readFileAsDataURLPromise(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function applyImagesToSide(side, fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      const images = sideImages(current(), side);
+      const room = MAX_IMAGES_PER_SIDE - images.length;
+      if (room <= 0) {
+        alert("Este lado já possui o máximo de " + MAX_IMAGES_PER_SIDE + " fotos.");
+        return;
+      }
+
+      const selected = files.slice(0, room);
+      if (files.length > room) {
+        alert("Serão adicionadas apenas " + room + " foto(s), pois o limite é " + MAX_IMAGES_PER_SIDE + " por lado.");
+      }
+
+      try {
+        const newImages = await Promise.all(selected.map(readFileAsDataURLPromise));
+        images.push(...newImages);
+        current()[side + "Image"] = images[0] || "";
         renderPage();
         autoSaveProject();
-      });
+      } catch (err) {
+        console.error("Falha ao ler imagens:", err);
+        alert("Não foi possível adicionar uma ou mais imagens.");
+      }
     }
 
     function bindDirectUpload(cardId, inputId, side) {
       const card = $(cardId);
       const input = $(inputId);
-      card.addEventListener("click", () => input.click());
+
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".photo-remove")) return;
+        input.click();
+      });
+
       card.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           input.click();
         }
       });
-      input.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        applyImageToSide(side, file);
+
+      input.addEventListener("change", async (e) => {
+        await applyImagesToSide(side, e.target.files);
         e.target.value = "";
       });
     }
@@ -1479,13 +1647,13 @@
       });
     });
 
-    $("leftUpload").addEventListener("change", (e) => {
-      applyImageToSide("left", e.target.files[0]);
+    $("leftUpload").addEventListener("change", async (e) => {
+      await applyImagesToSide("left", e.target.files);
       e.target.value = "";
     });
 
-    $("rightUpload").addEventListener("change", (e) => {
-      applyImageToSide("right", e.target.files[0]);
+    $("rightUpload").addEventListener("change", async (e) => {
+      await applyImagesToSide("right", e.target.files);
       e.target.value = "";
     });
 
