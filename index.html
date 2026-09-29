@@ -678,8 +678,8 @@
       <div class="group">
         <h2>Projeto</h2>
         <div class="btns">
-          <button class="primary" id="saveProjectBtn">Salvar local</button>
-          <button class="secondary" id="loadProjectBtn">Carregar local</button>
+          <button class="primary" id="saveProjectBtn">Salvar backup</button>
+          <button class="secondary" id="loadProjectBtn">Carregar backup</button>
         </div>
       </div>
     </aside>
@@ -1052,77 +1052,142 @@
     }
 
     let autoSaveTimer = null;
-    let autoSaveWarningShown = false;
+    let projectDbPromise = null;
+
+    function openProjectDb() {
+      if (projectDbPromise) return projectDbPromise;
+
+      projectDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open("SESE_REGRAS_SEGURANCA_DB", 1);
+
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains("project")) {
+            db.createObjectStore("project");
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+
+      return projectDbPromise;
+    }
+
+    async function idbSet(key, value) {
+      const db = await openProjectDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("project", "readwrite");
+        tx.objectStore("project").put(value, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    }
+
+    async function idbGet(key) {
+      const db = await openProjectDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("project", "readonly");
+        const request = tx.objectStore("project").get(key);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function projectSnapshot() {
+      return {
+        pages,
+        currentPage,
+        updatedAt: new Date().toISOString()
+      };
+    }
 
     function autoSaveProject() {
       clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => {
+      autoSaveTimer = setTimeout(async () => {
         try {
-          localStorage.setItem("SESE_STUDIO_PROJECT", JSON.stringify(pages));
-          localStorage.setItem("SESE_STUDIO_CURRENT", String(currentPage));
-          localStorage.setItem("SESE_STUDIO_AUTOSAVE_AT", new Date().toISOString());
+          await idbSet("main", projectSnapshot());
         } catch (err) {
-          console.error("Falha no autosave local:", err);
-          if (!autoSaveWarningShown) {
-            autoSaveWarningShown = true;
-            alert("Não foi possível fazer o backup automático neste navegador. As imagens podem ter excedido o limite local. A conexão Firebase continua necessária.");
-          }
+          console.error("Falha no autosave IndexedDB:", err);
         }
       }, 250);
     }
 
-    function restoreAutoSavedProject() {
-      const raw = localStorage.getItem("SESE_STUDIO_PROJECT");
-      if (!raw) return false;
+    async function migrateLegacyLocalStorageToIndexedDb() {
       try {
+        const existing = await idbGet("main");
+        if (existing && Array.isArray(existing.pages) && existing.pages.length) return false;
+
+        const raw = localStorage.getItem("SESE_STUDIO_PROJECT");
+        if (!raw) return false;
+
         const savedPages = JSON.parse(raw);
         if (!Array.isArray(savedPages) || !savedPages.length) return false;
-        pages = savedPages;
+
         const savedCurrent = parseInt(localStorage.getItem("SESE_STUDIO_CURRENT") || "0", 10);
-        currentPage = Math.max(0, Math.min(Number.isFinite(savedCurrent) ? savedCurrent : 0, pages.length - 1));
+        await idbSet("main", {
+          pages: savedPages,
+          currentPage: Math.max(0, Math.min(Number.isFinite(savedCurrent) ? savedCurrent : 0, savedPages.length - 1)),
+          updatedAt: localStorage.getItem("SESE_STUDIO_AUTOSAVE_AT") || new Date().toISOString(),
+          migratedFromLocalStorage: true
+        });
+
         return true;
       } catch (err) {
-        console.error("Falha ao restaurar autosave:", err);
+        console.warn("Não foi possível migrar backup antigo:", err);
         return false;
       }
     }
 
-    function saveProject() {
+    async function restoreAutoSavedProject() {
       try {
-        localStorage.setItem("SESE_STUDIO_PROJECT", JSON.stringify(pages));
-        localStorage.setItem("SESE_STUDIO_CURRENT", String(currentPage));
-        localStorage.setItem("SESE_STUDIO_AUTOSAVE_AT", new Date().toISOString());
-        alert("Backup salvo neste navegador.");
+        await migrateLegacyLocalStorageToIndexedDb();
+
+        const saved = await idbGet("main");
+        if (!saved || !Array.isArray(saved.pages) || !saved.pages.length) return false;
+
+        pages = saved.pages;
+        const savedCurrent = Number.isInteger(saved.currentPage) ? saved.currentPage : 0;
+        currentPage = Math.max(0, Math.min(savedCurrent, pages.length - 1));
+        return true;
       } catch (err) {
-        console.error("Falha ao salvar:", err);
-        alert("Não foi possível salvar o backup local. A conexão Firebase é necessária.");
+        console.error("Falha ao restaurar IndexedDB:", err);
+        return false;
       }
     }
 
-    function loadProject() {
-      const raw = localStorage.getItem("SESE_STUDIO_PROJECT");
-      if (!raw) {
-        alert("Nenhum projeto salvo no navegador.");
-        return;
-      }
+    async function saveProject() {
       try {
-        pages = JSON.parse(raw);
-        currentPage = parseInt(localStorage.getItem("SESE_STUDIO_CURRENT") || "0", 10);
-        if (!pages.length) throw new Error("Projeto vazio");
-        currentPage = Math.min(currentPage, pages.length - 1);
-    
-    function toggleDarkScreen(){
-      document.body.classList.toggle("dark-screen");
-      const btn = $("darkModeBtn");
-      if(btn) btn.textContent = document.body.classList.contains("dark-screen") ? "Tela Clara" : "Tela Escura";
+        await idbSet("main", projectSnapshot());
+        alert("Backup salvo neste dispositivo.");
+      } catch (err) {
+        console.error("Falha ao salvar no IndexedDB:", err);
+        alert("Não foi possível salvar o backup neste dispositivo.");
+      }
     }
 
-    $("darkModeBtn").onclick = toggleDarkScreen;
+    async function loadProject() {
+      try {
+        const saved = await idbGet("main");
+        if (!saved || !Array.isArray(saved.pages) || !saved.pages.length) {
+          alert("Nenhum backup encontrado neste dispositivo.");
+          return;
+        }
 
-    syncFormFromPage();
-      } catch (e) {
-        alert("Não foi possível carregar o projeto salvo.");
+        pages = saved.pages;
+        currentPage = Math.max(0, Math.min(Number.isInteger(saved.currentPage) ? saved.currentPage : 0, pages.length - 1));
+        syncFormFromPage();
+      } catch (err) {
+        console.error("Falha ao carregar do IndexedDB:", err);
+        alert("Não foi possível carregar o backup deste dispositivo.");
       }
+    }
+
+    async function initializeLocalProject() {
+      await restoreAutoSavedProject();
+      syncFormFromPage();
+      autoSaveProject();
     }
 
     function fitTvSlide() {
@@ -1379,9 +1444,7 @@
 
     bindEditableTitle("slideNumber","number");
     bindEditableTitle("slideTitle","title");
-    restoreAutoSavedProject();
-    syncFormFromPage();
-    autoSaveProject();
+    initializeLocalProject();
   </script>
 </body>
 </html>
