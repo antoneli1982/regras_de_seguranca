@@ -400,6 +400,27 @@
     }
     .hand-zone.left{left:1.5%}
     .hand-zone.right{right:1.5%}
+
+    .slide.only-correct .right-heading,
+    .slide.only-correct .hand-zone.right,
+    .slide.only-correct .divider,
+    .slide.only-correct .nok-badge{
+      display:none !important;
+    }
+    .slide.only-correct .left-heading{
+      left:50%;
+      transform:translateX(-50%);
+      width:520px;
+    }
+    .slide.only-correct .hand-zone.left{
+      left:5%;
+      right:5%;
+      width:auto;
+    }
+    .slide.only-correct .ok-badge{
+      left:0;
+      width:100%;
+    }
     .img-card{
       width:100%;
       height:100%;
@@ -695,6 +716,9 @@
           <button class="secondary" id="deletePageBtn">Excluir</button>
           <button class="ghost" id="resetPageBtn">Limpar imagens</button>
         </div>
+        <div class="btns">
+          <button class="secondary" id="toggleIncorrectBtn">Ocultar incorreto</button>
+        </div>
         <div class="pages" id="pagesList"></div>
       </div>
 
@@ -796,7 +820,8 @@
         confidential: "",
         logo: defaultLogo,
         leftImage: "",
-        rightImage: ""
+        rightImage: "",
+        showIncorrect: true
       }
     ];
 
@@ -807,6 +832,19 @@
 
     function current() {
       return pages[currentPage];
+    }
+
+    function isIncorrectVisible(page = current()) {
+      return page.showIncorrect !== false;
+    }
+
+    function toggleIncorrectMode() {
+      const p = current();
+      p.showIncorrect = !isIncorrectVisible(p);
+      renderPage();
+      renderPagesList();
+      if (typeof autoSaveProject === "function") autoSaveProject();
+      if (typeof scheduleCloudSave === "function") scheduleCloudSave();
     }
 
     function updatePresentationHud() {
@@ -868,6 +906,15 @@
     function renderPage() {
       updatePresentationHud();
       const p = current();
+
+      const onlyCorrect = !isIncorrectVisible(p);
+      const slide = $("slide");
+      if (slide) slide.classList.toggle("only-correct", onlyCorrect);
+
+      const toggleIncorrectBtn = $("toggleIncorrectBtn");
+      if (toggleIncorrectBtn) {
+        toggleIncorrectBtn.textContent = onlyCorrect ? "Mostrar incorreto" : "Ocultar incorreto";
+      }
       $("slideNumber").textContent = `${p.number}.`;
       $("slideTitle").textContent = p.title;
       if (document.activeElement !== $("slideLeftHeading")) $("slideLeftHeading").textContent = p.leftHeading;
@@ -1402,6 +1449,7 @@
     $("duplicatePageBtn").onclick = duplicatePage;
     $("deletePageBtn").onclick = deletePage;
     $("resetPageBtn").onclick = clearImages;
+    $("toggleIncorrectBtn").onclick = toggleIncorrectMode;
     $("saveProjectBtn").onclick = saveProject;
     $("loadProjectBtn").onclick = loadProject;
     $("tvModeBtn").onclick = () => {
