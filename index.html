@@ -235,6 +235,25 @@
       height:12px;
       background:var(--sese-blue);
     }
+    .slide .presentation-brand-title{
+      position:absolute;
+      top:17px;
+      left:22px;
+      z-index:11;
+      display:none;
+      font-size:14px;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:.8px;
+      color:var(--sese-blue);
+      text-transform:uppercase;
+      white-space:nowrap;
+      pointer-events:none;
+    }
+    body.tv-mode .slide .presentation-brand-title{
+      display:block;
+    }
+
     .slide .presentation-logo{
       position:absolute;
       top:42px;
@@ -714,6 +733,7 @@
       <div class="stage-wrap">
         <div class="slide" id="slide">
           <div class="top-blue"></div>
+          <div class="presentation-brand-title">REGRAS DE SEGURANÇA SESE</div>
           <img class="presentation-logo" id="presentationLogo" alt="Logo SESÉ">
 <div class="title-bar">
             <div class="title-num" id="slideNumber" contenteditable="true" spellcheck="false">8.</div>
