@@ -146,6 +146,32 @@
       min-width:0;
       flex:1;
     }
+    .page-order-controls{
+      display:flex;
+      gap:4px;
+      margin-left:8px;
+    }
+    .page-order-btn{
+      width:28px;
+      height:28px;
+      padding:0;
+      border-radius:8px;
+      background:#213249;
+      color:#eaf1fa;
+      border:1px solid rgba(255,255,255,.10);
+      font-size:15px;
+      line-height:1;
+      cursor:pointer;
+      box-shadow:none;
+    }
+    .page-order-btn:hover{
+      transform:none;
+      background:#2b405c;
+    }
+    .page-order-btn:disabled{
+      opacity:.28;
+      cursor:not-allowed;
+    }
     .page-title-mini{font-size:12px; color:#a9b8ca; margin-top:2px; font-weight:500}
     .workspace{
       overflow:auto;
@@ -1002,14 +1028,48 @@
               <div class="page-title-mini">${page.number}. ${page.title}</div>
             </div>
           </div>
-          <div style="opacity:.7">›</div>
+          <div class="page-order-controls">
+            <span class="page-order-btn page-up" role="button" aria-label="Mover página para cima" title="Mover para cima">↑</span>
+            <span class="page-order-btn page-down" role="button" aria-label="Mover página para baixo" title="Mover para baixo">↓</span>
+          </div>
         `;
 
-        btn.onclick = () => {
+        btn.onclick = (e) => {
+          if (e.target.closest(".page-order-btn")) return;
           currentPage = index;
           syncFormFromPage();
           if (typeof scheduleCloudSave === "function") scheduleCloudSave();
         };
+
+        const upBtn = btn.querySelector(".page-up");
+        const downBtn = btn.querySelector(".page-down");
+        upBtn.setAttribute("aria-disabled", index === 0 ? "true" : "false");
+        downBtn.setAttribute("aria-disabled", index === pages.length - 1 ? "true" : "false");
+        if (index === 0) upBtn.style.opacity = ".28";
+        if (index === pages.length - 1) downBtn.style.opacity = ".28";
+
+        const movePage = (fromIndex, toIndex) => {
+          if (toIndex < 0 || toIndex >= pages.length || fromIndex === toIndex) return;
+          const selectedPage = pages[currentPage];
+          const moved = pages.splice(fromIndex, 1)[0];
+          pages.splice(toIndex, 0, moved);
+          currentPage = pages.indexOf(selectedPage);
+          renderPagesList();
+          syncFormFromPage();
+          if (typeof scheduleCloudSave === "function") scheduleCloudSave();
+        };
+
+        upBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          movePage(index, index - 1);
+        });
+
+        downBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          movePage(index, index + 1);
+        });
 
         btn.addEventListener("dragstart", (e) => {
           btn.classList.add("dragging");
