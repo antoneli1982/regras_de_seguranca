@@ -793,7 +793,16 @@
         currentPage = parseInt(localStorage.getItem("SESE_STUDIO_CURRENT") || "0", 10);
         if (!pages.length) throw new Error("Projeto vazio");
         currentPage = Math.min(currentPage, pages.length - 1);
-        syncFormFromPage();
+    
+    function toggleDarkScreen(){
+      document.body.classList.toggle("dark-screen");
+      const btn = $("darkModeBtn");
+      if(btn) btn.textContent = document.body.classList.contains("dark-screen") ? "Tela Clara" : "Tela Escura";
+    }
+
+    $("darkModeBtn").onclick = toggleDarkScreen;
+
+    syncFormFromPage();
       } catch (e) {
         alert("Não foi possível carregar o projeto salvo.");
       }
