@@ -432,6 +432,73 @@
       transform-origin:center center;
     }
 
+    .presentation-hud{
+      display:none;
+    }
+    body.tv-mode .presentation-hud{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      pointer-events:none;
+      display:block;
+    }
+    body.tv-mode .presentation-nav{
+      position:absolute;
+      top:50%;
+      width:54px;
+      height:84px;
+      margin-top:-42px;
+      border:none;
+      border-radius:16px;
+      background:rgba(0,0,0,.28);
+      color:#fff;
+      font-size:34px;
+      line-height:1;
+      cursor:pointer;
+      pointer-events:auto;
+      opacity:.28;
+      transition:opacity .16s ease, background .16s ease;
+      backdrop-filter:blur(6px);
+    }
+    body.tv-mode .presentation-nav:hover,
+    body.tv-mode .presentation-nav:focus{
+      opacity:.9;
+      background:rgba(0,0,0,.55);
+      transform:none;
+    }
+    body.tv-mode .presentation-prev{left:14px}
+    body.tv-mode .presentation-next{right:14px}
+    body.tv-mode .presentation-counter{
+      position:absolute;
+      right:18px;
+      bottom:14px;
+      min-width:64px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(0,0,0,.38);
+      color:#fff;
+      font-size:12px;
+      font-weight:700;
+      text-align:center;
+      letter-spacing:.3px;
+      pointer-events:none;
+      backdrop-filter:blur(6px);
+    }
+    body.tv-mode .img-card{
+      cursor:default;
+    }
+    body.tv-mode .img-card:hover{
+      transform:none;
+      box-shadow:none;
+    }
+    body.tv-mode .upload-callout{
+      display:none !important;
+    }
+    body.tv-mode .slide [contenteditable="true"]{
+      pointer-events:none;
+      cursor:default !important;
+    }
+
 
     body.dark-screen .workspace,
     body.dark-screen .stage-wrap{
@@ -548,7 +615,7 @@
           </div>
         </div>
         <div class="top-actions">
-                    <button id="tvModeBtn">Modo TV</button>
+                    <button id="tvModeBtn">Apresentação</button>
           <button id="darkModeBtn">Tela Escura</button>
           <button id="printBtn">Exportar PDF</button>
         </div>
@@ -594,6 +661,13 @@
       <input id="leftInlineUpload" type="file" accept="image/*" hidden>
       <input id="rightInlineUpload" type="file" accept="image/*" hidden>
     </main>
+  </div>
+
+
+  <div class="presentation-hud" id="presentationHud" aria-hidden="true">
+    <button class="presentation-nav presentation-prev" id="presentationPrevBtn" aria-label="Página anterior">‹</button>
+    <button class="presentation-nav presentation-next" id="presentationNextBtn" aria-label="Próxima página">›</button>
+    <div class="presentation-counter" id="presentationCounter">1 / 1</div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
@@ -796,6 +870,35 @@
       return pages[currentPage];
     }
 
+    function updatePresentationHud() {
+      const counter = $("presentationCounter");
+      if (counter) counter.textContent = (currentPage + 1) + " / " + pages.length;
+      const prev = $("presentationPrevBtn");
+      const next = $("presentationNextBtn");
+      if (prev) prev.style.visibility = currentPage > 0 ? "visible" : "hidden";
+      if (next) next.style.visibility = currentPage < pages.length - 1 ? "visible" : "hidden";
+    }
+
+    function goToPresentationPage(index) {
+      const target = Math.max(0, Math.min(index, pages.length - 1));
+      if (target === currentPage) {
+        updatePresentationHud();
+        return;
+      }
+      currentPage = target;
+      syncFormFromPage();
+      updatePresentationHud();
+      if (typeof scheduleCloudSave === "function") scheduleCloudSave();
+    }
+
+    function nextPresentationPage() {
+      goToPresentationPage(currentPage + 1);
+    }
+
+    function previousPresentationPage() {
+      goToPresentationPage(currentPage - 1);
+    }
+
     function syncFormFromPage() {
       const p = current();
       $("pageNumber").value = p.number;
@@ -823,6 +926,7 @@
     }
 
     function renderPage() {
+      updatePresentationHud();
       const p = current();
       $("slideNumber").textContent = `${p.number}.`;
       $("slideTitle").textContent = p.title;
@@ -965,18 +1069,53 @@
       slide.style.transform = `scale(${scale})`;
     }
 
-    function toggleTvMode() {
-      document.body.classList.toggle("tv-mode");
-      if (document.body.classList.contains("tv-mode")) {
+    function toggleTvMode(forceState) {
+      const shouldOpen = typeof forceState === "boolean"
+        ? forceState
+        : !document.body.classList.contains("tv-mode");
+
+      document.body.classList.toggle("tv-mode", shouldOpen);
+      const hud = $("presentationHud");
+      const btn = $("tvModeBtn");
+
+      if (shouldOpen) {
+        updatePresentationHud();
         fitTvSlide();
-        if (document.documentElement.requestFullscreen) {
+        if (hud) hud.setAttribute("aria-hidden", "false");
+        if (btn) btn.textContent = "Sair da apresentação";
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(() => {});
         }
       } else {
         $("slide").style.transform = "";
+        if (hud) hud.setAttribute("aria-hidden", "true");
+        if (btn) btn.textContent = "Apresentação";
         if (document.fullscreenElement && document.exitFullscreen) {
           document.exitFullscreen().catch(() => {});
         }
+      }
+    }
+
+    function handlePresentationKeys(e) {
+      if (!document.body.classList.contains("tv-mode")) return;
+
+      const tag = (e.target && e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)) {
+        e.preventDefault();
+        nextPresentationPage();
+      } else if (["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(e.key)) {
+        e.preventDefault();
+        previousPresentationPage();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        goToPresentationPage(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        goToPresentationPage(pages.length - 1);
+      } else if (e.key === "Escape") {
+        toggleTvMode(false);
       }
     }
 
@@ -985,6 +1124,10 @@
       if (!document.fullscreenElement && document.body.classList.contains("tv-mode")) {
         document.body.classList.remove("tv-mode");
         $("slide").style.transform = "";
+        const hud = $("presentationHud");
+        if (hud) hud.setAttribute("aria-hidden", "true");
+        const btn = $("tvModeBtn");
+        if (btn) btn.textContent = "Apresentação";
       }
     });
 
@@ -1062,8 +1205,11 @@
     $("resetPageBtn").onclick = clearImages;
     $("saveProjectBtn").onclick = saveProject;
     $("loadProjectBtn").onclick = loadProject;
-    $("tvModeBtn").onclick = toggleTvMode;
+    $("tvModeBtn").onclick = () => toggleTvMode();
     $("printBtn").onclick = () => window.print();
+    $("presentationPrevBtn").onclick = (e) => { e.stopPropagation(); previousPresentationPage(); };
+    $("presentationNextBtn").onclick = (e) => { e.stopPropagation(); nextPresentationPage(); };
+    document.addEventListener("keydown", handlePresentationKeys);
 
     ["pageNumber","mainTitle","leftHeadingInput","rightHeadingInput","okLabelInput","nokLabelInput"].forEach(id => {
       $(id).addEventListener("input", updateCurrentFromForm);
