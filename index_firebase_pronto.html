@@ -201,6 +201,17 @@
       background:#fff; color:#0f1720; border:1px solid #d8dee6;
       box-shadow:0 5px 18px rgba(15,23,42,.05);
     }
+    .top-actions select{
+      background:#fff;
+      color:#0f1720;
+      border:1px solid #d8dee6;
+      box-shadow:0 5px 18px rgba(15,23,42,.05);
+      border-radius:10px;
+      padding:9px 12px;
+      font:inherit;
+      font-weight:700;
+      cursor:pointer;
+    }
     .stage-wrap{
       background:rgba(255,255,255,.58);
       border:1px solid rgba(255,255,255,.8);
@@ -223,6 +234,22 @@
       left:0; right:0; top:0;
       height:12px;
       background:var(--sese-blue);
+    }
+    .slide .presentation-logo{
+      position:absolute;
+      top:16px;
+      right:18px;
+      width:118px;
+      height:18px;
+      object-fit:contain;
+      object-position:right center;
+      z-index:8;
+      display:none;
+      pointer-events:none;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.10));
+    }
+    body.tv-mode .slide .presentation-logo{
+      display:block;
     }
     .slide .title-bar{
       position:absolute;
@@ -668,6 +695,13 @@
         </div>
         <div class="top-actions">
                     <button id="tvModeBtn">Apresentação</button>
+          <button id="autoTvBtn">TV automático</button>
+          <select id="autoTvInterval" aria-label="Tempo de troca automática" title="Tempo de troca automática">
+            <option value="5">5 s</option>
+            <option value="10" selected>10 s</option>
+            <option value="15">15 s</option>
+            <option value="20">20 s</option>
+          </select>
           <button id="darkModeBtn">Tela Escura</button>
           <button id="printBtn">Exportar PDF</button>
         </div>
@@ -676,6 +710,7 @@
       <div class="stage-wrap">
         <div class="slide" id="slide">
           <div class="top-blue"></div>
+          <img class="presentation-logo" id="presentationLogo" alt="Logo SESÉ">
 <div class="title-bar">
             <div class="title-num" id="slideNumber" contenteditable="true" spellcheck="false">8.</div>
             <div class="title-text" id="slideTitle" contenteditable="true" spellcheck="false">UTILIZAÇÃO DE ADORNOS</div>
@@ -745,6 +780,9 @@
     ];
 
     const $ = (id) => document.getElementById(id);
+
+    let autoTvTimer = null;
+    let autoTvActive = false;
 
     /* =========================================================
        FIREBASE EXCLUSIVO: regras_de_seguranca
@@ -986,6 +1024,8 @@
       if (document.activeElement !== $("slideRightHeading")) $("slideRightHeading").textContent = p.rightHeading;
       $("brandLogo").src = p.logo || defaultLogo;
       $("heroLogo").src = p.logo || defaultLogo;
+      const presentationLogo = $("presentationLogo");
+      if (presentationLogo) presentationLogo.src = p.logo || defaultLogo;
       renderImageCard("left", p.leftImage);
       renderImageCard("right", p.rightImage);
     }
@@ -1193,6 +1233,50 @@
       slide.style.transform = `scale(${scale})`;
     }
 
+    function stopAutoTv() {
+      if (autoTvTimer) {
+        clearInterval(autoTvTimer);
+        autoTvTimer = null;
+      }
+      autoTvActive = false;
+      const btn = $("autoTvBtn");
+      if (btn) btn.textContent = "TV automático";
+    }
+
+    function startAutoTv() {
+      const select = $("autoTvInterval");
+      const seconds = Math.max(5, parseInt(select ? select.value : "10", 10) || 10);
+
+      stopAutoTv();
+      autoTvActive = true;
+
+      const btn = $("autoTvBtn");
+      if (btn) btn.textContent = "Parar TV";
+
+      toggleTvMode(true);
+
+      autoTvTimer = setInterval(() => {
+        if (!document.body.classList.contains("tv-mode")) {
+          stopAutoTv();
+          return;
+        }
+
+        if (pages.length <= 1) return;
+
+        const nextIndex = currentPage >= pages.length - 1 ? 0 : currentPage + 1;
+        goToPresentationPage(nextIndex);
+      }, seconds * 1000);
+    }
+
+    function toggleAutoTv() {
+      if (autoTvActive) {
+        stopAutoTv();
+        toggleTvMode(false);
+      } else {
+        startAutoTv();
+      }
+    }
+
     function toggleTvMode(forceState) {
       const shouldOpen = typeof forceState === "boolean"
         ? forceState
@@ -1211,6 +1295,7 @@
           document.documentElement.requestFullscreen().catch(() => {});
         }
       } else {
+        stopAutoTv();
         $("slide").style.transform = "";
         if (hud) hud.setAttribute("aria-hidden", "true");
         if (btn) btn.textContent = "Apresentação";
@@ -1252,6 +1337,7 @@
         if (hud) hud.setAttribute("aria-hidden", "true");
         const btn = $("tvModeBtn");
         if (btn) btn.textContent = "Apresentação";
+        stopAutoTv();
       }
     });
 
@@ -1329,7 +1415,14 @@
     $("resetPageBtn").onclick = clearImages;
     $("saveProjectBtn").onclick = saveProject;
     $("loadProjectBtn").onclick = loadProject;
-    $("tvModeBtn").onclick = () => toggleTvMode();
+    $("tvModeBtn").onclick = () => {
+      stopAutoTv();
+      toggleTvMode();
+    };
+    $("autoTvBtn").onclick = toggleAutoTv;
+    $("autoTvInterval").addEventListener("change", () => {
+      if (autoTvActive) startAutoTv();
+    });
     $("printBtn").onclick = () => window.print();
     $("presentationPrevBtn").onclick = (e) => { e.stopPropagation(); previousPresentationPage(); };
     $("presentationNextBtn").onclick = (e) => { e.stopPropagation(); nextPresentationPage(); };
