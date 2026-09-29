@@ -120,6 +120,32 @@
       gap:10px;
     }
     .page-item.active{outline:2px solid rgba(244,191,18,.9); background:#1a293d}
+    .page-item{
+      cursor:grab;
+      user-select:none;
+    }
+    .page-item:active{cursor:grabbing}
+    .page-item.dragging{
+      opacity:.45;
+      transform:scale(.985);
+    }
+    .page-item.drag-over{
+      outline:2px dashed var(--sese-blue);
+      background:#1c3048;
+    }
+    .page-drag-handle{
+      font-size:18px;
+      line-height:1;
+      opacity:.65;
+      margin-right:8px;
+      flex-shrink:0;
+    }
+    .page-item-main{
+      display:flex;
+      align-items:center;
+      min-width:0;
+      flex:1;
+    }
     .page-title-mini{font-size:12px; color:#a9b8ca; margin-top:2px; font-weight:500}
     .workspace{
       overflow:auto;
@@ -785,36 +811,75 @@
     function renderPagesList() {
       const list = $("pagesList");
       list.innerHTML = "";
+
       pages.forEach((page, index) => {
         const btn = document.createElement("button");
         btn.className = "page-item" + (index === currentPage ? " active" : "");
+        btn.type = "button";
+        btn.draggable = true;
+        btn.dataset.index = index;
         btn.innerHTML = `
-          <div>
-            <div><strong>Página ${index + 1}</strong></div>
-            <div class="page-title-mini">${page.number}. ${page.title}</div>
+          <div class="page-item-main">
+            <div class="page-drag-handle" aria-hidden="true">⋮⋮</div>
+            <div>
+              <div><strong>Página ${index + 1}</strong></div>
+              <div class="page-title-mini">${page.number}. ${page.title}</div>
+            </div>
           </div>
           <div style="opacity:.7">›</div>
         `;
+
         btn.onclick = () => {
           currentPage = index;
-          document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && document.body.classList.contains("tv-mode") && !document.fullscreenElement) {
-        document.body.classList.remove("tv-mode");
-        $("slide").style.transform = "";
-      }
-    });
-
-
-    function toggleDarkScreen(){
-      document.body.classList.toggle("dark-screen");
-      const btn = $("darkModeBtn");
-      if(btn) btn.textContent = document.body.classList.contains("dark-screen") ? "Tela Clara" : "Tela Escura";
-    }
-
-    $("darkModeBtn").onclick = toggleDarkScreen;
-
-    syncFormFromPage();
+          syncFormFromPage();
+          if (typeof scheduleCloudSave === "function") scheduleCloudSave();
         };
+
+        btn.addEventListener("dragstart", (e) => {
+          btn.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(index));
+        });
+
+        btn.addEventListener("dragend", () => {
+          btn.classList.remove("dragging");
+          document.querySelectorAll(".page-item.drag-over").forEach(el => el.classList.remove("drag-over"));
+        });
+
+        btn.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          btn.classList.add("drag-over");
+        });
+
+        btn.addEventListener("dragleave", () => {
+          btn.classList.remove("drag-over");
+        });
+
+        btn.addEventListener("drop", (e) => {
+          e.preventDefault();
+          btn.classList.remove("drag-over");
+
+          const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+          const toIndex = index;
+
+          if (!Number.isInteger(fromIndex) || fromIndex === toIndex) return;
+
+          const selectedPage = pages[currentPage];
+          const moved = pages.splice(fromIndex, 1)[0];
+          pages.splice(toIndex, 0, moved);
+          currentPage = pages.indexOf(selectedPage);
+
+          renderPagesList();
+          syncFormFromPage();
+
+          if (typeof scheduleCloudSave === "function") {
+            scheduleCloudSave();
+          } else if (typeof saveProject === "function" && !String(saveProject).includes("localStorage")) {
+            saveProject(true);
+          }
+        });
+
         list.appendChild(btn);
       });
     }
