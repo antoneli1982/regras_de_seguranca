@@ -764,6 +764,7 @@
       }
       currentPage = target;
       syncFormFromPage();
+      autoSaveProject();
       updatePresentationHud();
       if (typeof scheduleCloudSave === "function") scheduleCloudSave();
     }
@@ -799,6 +800,7 @@
       p.confidential = "";
       renderPage();
       renderPagesList();
+      autoSaveProject();
     }
 
     function renderPage() {
@@ -862,6 +864,7 @@
           if (e.target.closest(".page-order-btn")) return;
           currentPage = index;
           syncFormFromPage();
+          autoSaveProject();
           if (typeof scheduleCloudSave === "function") scheduleCloudSave();
         };
 
@@ -880,6 +883,7 @@
           currentPage = pages.indexOf(selectedPage);
           renderPagesList();
           syncFormFromPage();
+          autoSaveProject();
           if (typeof scheduleCloudSave === "function") scheduleCloudSave();
         };
 
@@ -1004,12 +1008,55 @@
       p.leftImage = "";
       p.rightImage = "";
       renderPage();
+      autoSaveProject();
+    }
+
+    let autoSaveTimer = null;
+    let autoSaveWarningShown = false;
+
+    function autoSaveProject() {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem("SESE_STUDIO_PROJECT", JSON.stringify(pages));
+          localStorage.setItem("SESE_STUDIO_CURRENT", String(currentPage));
+          localStorage.setItem("SESE_STUDIO_AUTOSAVE_AT", new Date().toISOString());
+        } catch (err) {
+          console.error("Falha no autosave local:", err);
+          if (!autoSaveWarningShown) {
+            autoSaveWarningShown = true;
+            alert("Não foi possível fazer o backup automático neste navegador. As imagens podem ter excedido o limite local. A conexão Firebase continua necessária.");
+          }
+        }
+      }, 250);
+    }
+
+    function restoreAutoSavedProject() {
+      const raw = localStorage.getItem("SESE_STUDIO_PROJECT");
+      if (!raw) return false;
+      try {
+        const savedPages = JSON.parse(raw);
+        if (!Array.isArray(savedPages) || !savedPages.length) return false;
+        pages = savedPages;
+        const savedCurrent = parseInt(localStorage.getItem("SESE_STUDIO_CURRENT") || "0", 10);
+        currentPage = Math.max(0, Math.min(Number.isFinite(savedCurrent) ? savedCurrent : 0, pages.length - 1));
+        return true;
+      } catch (err) {
+        console.error("Falha ao restaurar autosave:", err);
+        return false;
+      }
     }
 
     function saveProject() {
-      localStorage.setItem("SESE_STUDIO_PROJECT", JSON.stringify(pages));
-      localStorage.setItem("SESE_STUDIO_CURRENT", currentPage);
-      alert("Projeto salvo no navegador.");
+      try {
+        localStorage.setItem("SESE_STUDIO_PROJECT", JSON.stringify(pages));
+        localStorage.setItem("SESE_STUDIO_CURRENT", String(currentPage));
+        localStorage.setItem("SESE_STUDIO_AUTOSAVE_AT", new Date().toISOString());
+        alert("Backup salvo neste navegador.");
+      } catch (err) {
+        console.error("Falha ao salvar:", err);
+        alert("Não foi possível salvar o backup local. A conexão Firebase é necessária.");
+      }
     }
 
     function loadProject() {
@@ -1128,6 +1175,7 @@
       readFileAsDataURL(file, (result) => {
         current()[side + "Image"] = result;
         renderPage();
+        autoSaveProject();
       });
     }
 
@@ -1155,6 +1203,7 @@
         if (clean !== el.textContent) el.textContent = clean;
         current()[pageKey] = clean;
         $(sidebarInputId).value = clean;
+        autoSaveProject();
       });
       el.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
@@ -1167,6 +1216,7 @@
         current()[pageKey] = value;
         $(sidebarInputId).value = value;
         el.textContent = value;
+        autoSaveProject();
       });
     }
 
@@ -1195,6 +1245,7 @@
       readFileAsDataURL(file, (result) => {
         current().logo = result;
         renderPage();
+        autoSaveProject();
       });
     });
 
@@ -1228,13 +1279,16 @@
         if(key==="title") $("mainTitle").value=current()[key];
         if(key==="number") $("pageNumber").value=current()[key];
         renderPagesList();
+        autoSaveProject();
       });
-      el.addEventListener("blur",()=>{ el.textContent=current()[key]; });
+      el.addEventListener("blur",()=>{ el.textContent=current()[key]; autoSaveProject(); });
     }
 
     bindEditableTitle("slideNumber","number");
     bindEditableTitle("slideTitle","title");
-syncFormFromPage();
+    restoreAutoSavedProject();
+    syncFormFromPage();
+    autoSaveProject();
   </script>
 </body>
 </html>
