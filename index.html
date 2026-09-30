@@ -1024,6 +1024,19 @@
       .slide.portrait-slide.only-correct{grid-template-rows:40px 30px minmax(100px,1fr) 26px}
       body.tv-mode .slide.portrait-slide{width:calc(100% - 16px);height:calc(100% - 124px)}
     }
+
+    /* Keep status badges inside the presentation safe area. */
+    body.tv-mode .stage-wrap{position:relative;overflow:hidden;min-width:0;min-height:0}
+    body.tv-mode .slide:not(.portrait-slide){position:absolute;left:50%;top:50%;width:960px;height:540px;flex:none}
+    body.tv-mode .slide:not(.portrait-slide) .hand-zone{bottom:76px}
+    body.tv-mode .slide:not(.portrait-slide) .divider{bottom:76px}
+    body.tv-mode .slide:not(.portrait-slide) .ok-badge,
+    body.tv-mode .slide:not(.portrait-slide) .nok-badge{bottom:16px;height:48px;z-index:10;align-items:center}
+    body.tv-mode .slide.portrait-slide{min-height:0;grid-template-rows:40px 26px minmax(0,1fr) 32px 26px minmax(0,1fr) 32px}
+    body.tv-mode .slide.portrait-slide.only-correct{grid-template-rows:40px 30px minmax(0,1fr) 32px}
+    body.tv-mode .slide.portrait-slide .ok-badge,
+    body.tv-mode .slide.portrait-slide .nok-badge{z-index:10;min-height:28px}
+
 </style>
 </head>
 <body data-mobile-tab="view">
@@ -1777,8 +1790,12 @@
         return;
       }
       const rotate = document.body.classList.contains("landscape-mode") && window.innerHeight > window.innerWidth;
-      const scale = rotate ? Math.min(window.innerHeight / 960, window.innerWidth / 540) : Math.min(window.innerWidth / 960, window.innerHeight / 540);
-      slide.style.transform = `rotate(${rotate ? 90 : 0}deg) scale(${scale})`;
+      // Measure the actual container and reserve 5% on each edge for TV overscan.
+      const stage = document.querySelector(".stage-wrap");
+      const availableWidth = Math.min(stage.clientWidth, window.innerWidth) * 0.90;
+      const availableHeight = Math.min(stage.clientHeight, window.innerHeight) * 0.90;
+      const scale = rotate ? Math.min(availableHeight / 960, availableWidth / 540) : Math.min(availableWidth / 960, availableHeight / 540);
+      slide.style.transform = `translate(-50%, -50%) rotate(${rotate ? 90 : 0}deg) scale(${scale})`;
     }
 
     function stopAutoTv() {
