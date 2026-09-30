@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2026.09.29.4" />
+  <meta name="app-version" content="2026.09.30.1" />
   <title>SESE Studio - Regras de Segurança</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -751,7 +751,7 @@
       }
     }
 
-    @media (max-width: 820px){
+    @media (max-width: 1024px){
       body{
         height:auto;
         min-height:100vh;
@@ -915,14 +915,62 @@
       .slide .section-title[contenteditable="true"]{border-color:transparent; background:transparent; box-shadow:none}
     }
   #syncRetry{padding:6px 12px} body.tv-mode #syncBar{display:none} @media print{#syncBar{display:none}}
-  </style>
+  
+    .mobile-tabs,.mobile-view-controls,.mobile-editor-heading{display:none}
+    .presentation-exit{position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));pointer-events:auto;background:#172638;color:white;min-height:44px;border:1px solid #64748b}
+    body.tv-mode .slide{flex-shrink:0}
+    @media screen and (max-width:1024px){
+      body{min-height:100dvh;padding-bottom:calc(82px + env(safe-area-inset-bottom));overflow-x:hidden}
+      .app{min-height:0}
+      #syncBar{flex-wrap:wrap;font-size:12px!important;padding:8px 14px!important}
+      .mobile-tabs{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr 1fr;position:fixed;bottom:0;left:0;right:0;z-index:1000;padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:3px;background:#0f1720;border-top:1px solid #334155}
+      .mobile-tabs button{padding:8px 2px;min-width:0;min-height:54px;color:#b8c7da;background:transparent;font-size:10px;line-height:1.4;border-radius:10px}
+      .mobile-tabs button span{display:block;font-size:19px;line-height:24px}
+      .mobile-tabs button[aria-selected="true"]{background:#1465ea;color:white}
+      .sidebar{display:none;padding:16px;border:0;min-height:calc(100dvh - 130px)}
+      body[data-mobile-tab]:not([data-mobile-tab="view"]) .sidebar{display:block}
+      body[data-mobile-tab]:not([data-mobile-tab="view"]) .workspace{display:none}
+      .sidebar .group{display:none;margin:0;padding:18px;border-radius:16px}
+      body[data-mobile-tab="text"] #mobile-panel-text,body[data-mobile-tab="images"] #mobile-panel-images,body[data-mobile-tab="pages"] #mobile-panel-pages,body[data-mobile-tab="project"] #mobile-panel-project{display:block}
+      .mobile-editor-heading{display:block;color:#aebed1;font-size:12px;line-height:1.5;margin:0 0 16px;overflow-wrap:anywhere}
+      .sidebar .brand{margin-bottom:12px}.sidebar .brand p{display:block}
+      .workspace{padding:18px 12px}
+      .hero-title{align-items:flex-start}.hero-title h2{font-size:18px;line-height:1.35}.hero-title p{font-size:12px;line-height:1.55}
+      .hero-title img{height:26px;max-width:88px;object-fit:contain}
+      .top-actions{grid-template-columns:1fr 1fr 76px}
+      #tvModeBtn{grid-column:1/-1;background:#1465ea;color:white;font-size:15px;min-height:50px}
+      #darkModeBtn{grid-column:1/3}#printBtn{grid-column:3;font-size:10px}
+      .stage-wrap{padding:4px;border-radius:12px}
+      .slide [contenteditable],.slide .img-card{pointer-events:none}
+      .slide .upload-callout,.slide .photo-remove{display:none!important}
+      .slide .section-title[contenteditable]{border-color:transparent;background:transparent;box-shadow:none}
+      .mobile-view-controls{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:12px;margin-top:16px;text-align:center}
+      .mobile-view-controls button{background:#fff;border:1px solid #cbd5e1;font-size:24px;color:#153c72}
+      .mobile-view-controls button:disabled{opacity:.35}
+      .mobile-view-controls p{margin:0;font-size:13px;font-weight:700;color:#334155}
+      .mobile-view-controls small{display:block;margin-top:6px;color:#67707a;font-size:11px;font-weight:500}
+      .page-order-btn{min-width:44px;min-height:44px}.page-item-main{overflow-wrap:anywhere}
+      .primary{color:white}input[type="file"]{max-width:100%;font-size:14px}
+      button:focus-visible{outline:3px solid #f4bf12;outline-offset:2px}
+      body.tv-mode{padding:0;height:100dvh}
+      body.tv-mode .mobile-tabs,body.tv-mode .mobile-view-controls{display:none!important}
+      body.tv-mode .workspace{display:flex!important;height:100dvh}
+      body.tv-mode .app,body.tv-mode .stage-wrap{height:100dvh}
+      body.tv-mode .presentation-nav{top:auto;bottom:max(12px,env(safe-area-inset-bottom));height:44px;width:48px;margin:0;opacity:.85}
+      body.tv-mode .presentation-counter{bottom:max(18px,env(safe-area-inset-bottom));right:50%;transform:translateX(50%)}
+      body.dark-screen .mobile-view-controls p,body.dark-screen .mobile-view-controls small{color:#dbe5f0}
+    }
+    @media print{.mobile-tabs,.mobile-view-controls,.mobile-editor-heading,.presentation-hud{display:none!important}}
+
+</style>
 </head>
-<body>
+<body data-mobile-tab="view">
   <div id="syncBar" role="status" style="padding:10px 16px;background:#e9f2ff;color:#153c72;font:600 13px Arial;display:flex;gap:12px;align-items:center">
     <span id="syncStatus">Carregando projeto compartilhado…</span>
     <button id="syncRetry" hidden>Tentar novamente</button>
   </div>
   <div class="app" inert>
+<nav class="mobile-tabs" role="tablist" aria-label="Áreas do projeto"><button id="mobile-tab-view" role="tab" aria-controls="mobile-panel-view" aria-selected="true" data-tab="view"><span aria-hidden="true">▷</span>Apresentação</button><button id="mobile-tab-text" role="tab" aria-controls="mobile-panel-text" aria-selected="false" data-tab="text"><span aria-hidden="true">T</span>Textos</button><button id="mobile-tab-images" role="tab" aria-controls="mobile-panel-images" aria-selected="false" data-tab="images"><span aria-hidden="true">▧</span>Imagens</button><button id="mobile-tab-pages" role="tab" aria-controls="mobile-panel-pages" aria-selected="false" data-tab="pages"><span aria-hidden="true">▤</span>Páginas</button><button id="mobile-tab-project" role="tab" aria-controls="mobile-panel-project" aria-selected="false" data-tab="project"><span aria-hidden="true">⚙</span>Projeto</button></nav>
     <aside class="sidebar">
       <div class="brand">
         <img id="brandLogo" src="data:image/png;base64,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" alt="Logo SESE">
@@ -932,7 +980,8 @@
         </div>
       </div>
 
-      <div class="group">
+      <p class="mobile-editor-heading" id="mobileEditingPage"></p>
+      <div class="group" id="mobile-panel-text">
         <h2>Estrutura da página</h2>
         <label>Número</label>
         <input id="pageNumber" type="number" min="1" value="8">
@@ -964,7 +1013,7 @@
 
       </div>
 
-      <div class="group">
+      <div class="group" id="mobile-panel-images">
         <h2>Anexos / Imagens</h2>
         <label>Logo da SESÉ</label>
         <input id="logoUpload" type="file" accept="image/*">
@@ -976,7 +1025,7 @@
         <input id="rightUpload" type="file" accept="image/*" multiple>
       </div>
 
-      <div class="group">
+      <div class="group" id="mobile-panel-pages">
         <h2>Páginas</h2>
         <div class="btns">
           <button class="primary" id="newPageBtn">+ Nova</button>
@@ -992,7 +1041,7 @@
         <div class="pages" id="pagesList"></div>
       </div>
 
-      <div class="group">
+      <div class="group" id="mobile-panel-project">
         <h2>Projeto</h2>
         <div class="btns">
           <button class="primary" id="saveProjectBtn">Salvar backup</button>
@@ -1001,7 +1050,7 @@
       </div>
     </aside>
 
-    <main class="workspace">
+    <main class="workspace" id="mobile-panel-view">
       <div class="topbar">
         <div class="hero-title">
           <img id="heroLogo" src="data:image/png;base64,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" alt="Logo SESÉ">
@@ -1063,6 +1112,7 @@
           </div>
         </div>
       </div>
+      <div class="mobile-view-controls"><button id="mobilePrev" aria-label="Página anterior">‹</button><p><span id="mobileCounter"></span><small>Deslize para trocar • Gire o celular para ampliar</small></p><button id="mobileNext" aria-label="Próxima página">›</button></div>
       <input id="leftInlineUpload" type="file" accept="image/*" multiple hidden>
       <input id="rightInlineUpload" type="file" accept="image/*" multiple hidden>
     </main>
@@ -1070,13 +1120,14 @@
 
 
   <div class="presentation-hud" id="presentationHud" aria-hidden="true">
+    <button class="presentation-exit" id="presentationExitBtn">✕ Sair</button>
     <button class="presentation-nav presentation-prev" id="presentationPrevBtn" aria-label="Página anterior">‹</button>
     <button class="presentation-nav presentation-next" id="presentationNextBtn" aria-label="Próxima página">›</button>
     <div class="presentation-counter" id="presentationCounter">1 / 1</div>
   </div>
 
   <script>
-    const APP_VERSION = "2026.09.29.4";
+    const APP_VERSION = "2026.09.30.1";
     console.info("[SESE Studio] versão", APP_VERSION);
     const defaultLogo = "data:image/png;base64,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";
     const defaultCorrectImage = "";
@@ -1151,6 +1202,7 @@
     }
 
     function updatePresentationHud() {
+      updateMobileNavigation();
       const counter = $("presentationCounter");
       if (counter) counter.textContent = (currentPage + 1) + " / " + pages.length;
       const prev = $("presentationPrevBtn");
@@ -1957,6 +2009,65 @@
 
     bindEditableTitle("slideNumber","number");
     bindEditableTitle("slideTitle","title");
+
+
+    function updateMobileNavigation(){
+      $("mobileCounter").textContent = "Página " + (currentPage + 1) + " de " + pages.length;
+      $("mobilePrev").disabled = currentPage === 0;
+      $("mobileNext").disabled = currentPage >= pages.length - 1;
+      $("mobileEditingPage").textContent = "Editando página " + (currentPage + 1) + " · " + (current().title || "Sem título");
+    }
+    const mobileMedia = window.matchMedia("(max-width:1024px)");
+    function applyMobileAccessibility(){
+      document.querySelectorAll(".mobile-tabs button").forEach(button => {
+        const panel = document.getElementById(button.getAttribute("aria-controls"));
+        if(mobileMedia.matches){panel.setAttribute("role","tabpanel");panel.setAttribute("aria-labelledby",button.id);}
+        else{panel.removeAttribute("role");panel.removeAttribute("aria-labelledby");}
+      });
+      document.querySelectorAll(".slide [contenteditable]").forEach(el => el.setAttribute("contenteditable",mobileMedia.matches ? "false" : "true"));
+      requestAnimationFrame(() => document.body.classList.contains("tv-mode") ? fitTvSlide() : fitEditorSlide());
+    }
+    function selectMobileTab(key){
+      document.body.dataset.mobileTab=key;
+      document.querySelectorAll(".mobile-tabs button").forEach(button=>{
+        const active=button.dataset.tab===key;
+        button.setAttribute("aria-selected",String(active));button.tabIndex=active?0:-1;
+      });
+      updateMobileNavigation();
+      window.scrollTo(0,0);
+      requestAnimationFrame(fitEditorSlide);
+    }
+    document.querySelectorAll(".mobile-tabs button").forEach((button,index,buttons)=>{
+      button.addEventListener("click",()=>selectMobileTab(button.dataset.tab));
+      button.addEventListener("keydown",event=>{
+        if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+        event.preventDefault();
+        const next=event.key==="Home"?0:event.key==="End"?buttons.length-1:(index+(event.key==="ArrowRight"?1:-1)+buttons.length)%buttons.length;
+        buttons[next].focus();selectMobileTab(buttons[next].dataset.tab);
+      });
+    });
+    $("mobilePrev").onclick=previousPresentationPage;
+    $("mobileNext").onclick=nextPresentationPage;
+    $("presentationExitBtn").onclick=()=>toggleTvMode(false);
+    let swipeStart=null;
+    const stage=document.querySelector(".stage-wrap");
+    stage.addEventListener("touchstart",event=>{
+      swipeStart=event.touches.length===1?{x:event.touches[0].clientX,y:event.touches[0].clientY}:null;
+    },{passive:true});
+    stage.addEventListener("touchend",event=>{
+      if(!swipeStart || (!mobileMedia.matches && !document.body.classList.contains("tv-mode"))) return;
+      const dx=event.changedTouches[0].clientX-swipeStart.x,dy=event.changedTouches[0].clientY-swipeStart.y;
+      swipeStart=null;
+      if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.5) dx<0?nextPresentationPage():previousPresentationPage();
+    },{passive:true});
+    stage.addEventListener("touchcancel",()=>swipeStart=null,{passive:true});
+    mobileMedia.addEventListener("change",applyMobileAccessibility);
+    // Associate the existing labels with their fields without changing data bindings.
+    document.querySelectorAll(".sidebar label").forEach(label=>{
+      const field=label.nextElementSibling;if(field && field.id) label.htmlFor=field.id;
+    });
+    selectMobileTab("view");
+    applyMobileAccessibility();
 
     requestAnimationFrame(fitEditorSlide);
   </script>
