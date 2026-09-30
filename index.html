@@ -499,9 +499,9 @@
       right:6px;
       width:26px;
       height:26px;
-      border:none;
+      border:1px solid rgba(255,255,255,.9);
       border-radius:50%;
-      background:rgba(0,0,0,.62);
+      background:#b91c1c;
       color:#fff;
       font-size:16px;
       font-weight:800;
@@ -509,14 +509,15 @@
       padding:0;
       text-align:center;
       cursor:pointer;
-      opacity:.86;
-      z-index:4;
+      opacity:1;
+      z-index:6;
     }
     .photo-remove:hover{
       transform:none;
       opacity:1;
       background:rgba(177,26,32,.92);
     }
+    .photo-remove:focus-visible{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #153c72}
     .gallery-placeholder{
       position:absolute;
       inset:0;
@@ -548,6 +549,11 @@
       white-space:nowrap;
       z-index:5;
       box-shadow:0 4px 12px rgba(15,23,42,.16);
+    }
+    .img-card.has-image .upload-callout{
+      top:auto;
+      bottom:8px;
+      right:8px;
     }
     .img-card.placeholder .upload-callout{
       top:auto;
@@ -1117,6 +1123,46 @@
       .slide .section-title[contenteditable]{border-color:transparent;background:transparent;box-shadow:none}
     }
 
+    /* Controles dos objetos: rolagem interna preserva as ações no celular. */
+    .photo-annotate{pointer-events:auto}
+    .annotation-header,.annotation-footer{flex-shrink:0}
+    .annotation-body{min-height:0;overflow:auto;overscroll-behavior:contain}
+    .annotation-toolbar{gap:8px}
+    .annotation-toolbar button{min-height:40px}
+    .annotation-toolbar button:disabled{opacity:.42;cursor:not-allowed;transform:none}
+    .annotation-toolbar button:focus-visible,.annotation-toolbar input:focus-visible,.annotation-toolbar select:focus-visible,#annotationCanvas:focus-visible{outline:3px solid #1465ea;outline-offset:2px}
+    .annotation-toolbar label{margin:0}
+    .annotation-toolbar input[type="number"]{width:65px;min-height:38px;padding:5px 7px;background:white;color:#172638;border:1px solid #94a3b8;border-radius:8px;font-size:14px}
+    .annotation-toolbar input[type="color"]{width:40px;height:40px}
+    .annotation-properties{background:#fff}
+    .annotation-palette{display:flex;flex-wrap:wrap;gap:6px;padding-right:10px;border-right:1px solid #e2e8f0}
+    .annotation-group-label{flex-basis:100%;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#475569}
+    .annotation-toolbar .annotation-swatch{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 8px;color:#334155}
+    .annotation-swatch span{display:block;width:20px;height:20px;background:var(--swatch);border-radius:50%;border:1px solid #64748b;flex-shrink:0}
+    .annotation-toolbar .annotation-swatch[aria-pressed="true"]{border-color:#1465ea;box-shadow:inset 0 0 0 1px #1465ea;background:#eff6ff}
+    .annotation-other-colors{display:flex;align-items:center;gap:5px}
+    .annotation-selection select{width:220px;max-width:100%;height:40px;flex:1 1 180px;min-width:0}
+    .annotation-size-controls{display:flex;align-items:center;gap:6px;color:#475569;font-size:12px;white-space:nowrap}
+    .annotation-size-controls button{font-size:22px;min-width:40px}
+    #annotationSelectionStatus{margin:0;padding:9px 16px;background:#eff6ff;color:#153c72;font-size:12px;line-height:1.5}
+    .annotation-canvas-wrap{min-height:160px;max-height:none;overflow:hidden}
+    #annotationCanvas{max-height:48vh;max-width:100%;width:auto;height:auto;flex-shrink:0}
+    @media screen and (max-width:640px){
+      .annotation-toolbar button{min-height:44px}
+      .annotation-header h2{font-size:16px}
+      .annotation-header p{font-size:11px}
+      .annotation-palette{border-right:0;padding-right:0}
+      .annotation-toolbar input[type="number"]{min-height:44px;font-size:16px}
+      .annotation-toolbar input[type="color"]{width:44px;height:44px}
+      .annotation-selection select{flex-basis:100%;height:44px;font-size:16px}
+      .annotation-size-controls button{min-width:44px}
+      .annotation-footer{gap:8px;align-items:stretch;flex-wrap:wrap}
+      .annotation-footer small{max-width:none;font-size:10px}
+      .annotation-footer-actions{width:100%}
+      .annotation-footer-actions button{flex:1;min-height:44px}
+      #annotationCanvas{max-height:48vh}
+    }
+
   </style>
 </head>
 <body data-mobile-tab="view">
@@ -1180,7 +1226,7 @@
         <input id="rightUpload" type="file" accept="image/*" multiple>
         <div class="annotation-help">
           <strong>Marcar pontos importantes</strong>
-          <p>Depois de anexar uma foto, clique no ícone de lápis sobre ela. Use setas, círculos, retângulos e texto, como no PowerPoint.</p>
+          <p>Depois de anexar uma foto, clique no ícone de lápis sobre ela. Desenhe e selecione formatos para mover, aumentar ou mudar a cor. Vermelho, amarelo e azul ficam em destaque.</p>
         </div>
       </div>
 
@@ -1298,29 +1344,53 @@
   <dialog id="annotationDialog" class="annotation-dialog" aria-labelledby="annotationTitle">
     <div class="annotation-shell">
       <div class="annotation-header">
-        <div><h2 id="annotationTitle">Marcar pontos na foto</h2><p>Arraste sobre a imagem para desenhar. O resultado será salvo na foto.</p></div>
+        <div><h2 id="annotationTitle">Editar formatos na foto</h2><p>Desenhe, selecione e ajuste. Os formatos continuam editáveis após aplicar.</p></div>
         <button type="button" class="annotation-close" id="annotationCloseBtn" aria-label="Fechar editor">×</button>
       </div>
-      <div class="annotation-toolbar" role="toolbar" aria-label="Ferramentas de marcação">
-        <button type="button" data-annotation-tool="select" class="active" title="Selecionar">↖ Selecionar</button>
-        <button type="button" data-annotation-tool="arrow" title="Desenhar seta">➜ Seta</button>
-        <button type="button" data-annotation-tool="line" title="Desenhar linha">╱ Linha</button>
-        <button type="button" data-annotation-tool="rect" title="Desenhar retângulo">□ Retângulo</button>
-        <button type="button" data-annotation-tool="circle" title="Desenhar círculo ou elipse">○ Círculo</button>
-        <button type="button" data-annotation-tool="text" title="Inserir texto">T Texto</button>
-        <span class="toolbar-sep" aria-hidden="true"></span>
-        <label>Cor <input id="annotationColor" type="color" value="#e11d48" aria-label="Cor da marcação"></label>
-        <label>Espessura <select id="annotationWidth" aria-label="Espessura da marcação"><option value="3">Fina</option><option value="6" selected>Média</option><option value="10">Grossa</option></select></label>
-        <span class="toolbar-sep" aria-hidden="true"></span>
-        <button type="button" id="annotationUndoBtn" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
-        <button type="button" id="annotationClearBtn" title="Apagar todas as marcações">⌫ Limpar</button>
+      <div class="annotation-body">
+        <div class="annotation-toolbar" role="group" aria-label="Ferramentas de marcação">
+          <button type="button" data-annotation-tool="select" class="active" aria-pressed="true">↖ Selecionar</button>
+          <button type="button" data-annotation-tool="arrow" aria-pressed="false">➜ Seta</button>
+          <button type="button" data-annotation-tool="line" aria-pressed="false">╱ Linha</button>
+          <button type="button" data-annotation-tool="rect" aria-pressed="false">□ Retângulo</button>
+          <button type="button" data-annotation-tool="circle" aria-pressed="false">○ Círculo</button>
+          <button type="button" data-annotation-tool="text" aria-pressed="false">T Texto</button>
+          <span class="toolbar-sep" aria-hidden="true"></span>
+          <button type="button" id="annotationUndoBtn" title="Desfazer (Ctrl+Z)" disabled>↶ Desfazer</button>
+          <button type="button" id="annotationRedoBtn" title="Refazer (Ctrl+Shift+Z)" disabled>↷ Refazer</button>
+          <button type="button" id="annotationClearBtn" disabled>Limpar</button>
+        </div>
+        <div class="annotation-toolbar annotation-properties" role="group" aria-label="Cor e espessura dos formatos">
+          <div class="annotation-palette" role="group" aria-label="Cores primárias">
+            <span class="annotation-group-label">Cores primárias</span>
+            <button type="button" class="annotation-swatch" data-annotation-color="#ff0000" aria-pressed="true"><span style="--swatch:#ff0000" aria-hidden="true"></span>Vermelho</button>
+            <button type="button" class="annotation-swatch" data-annotation-color="#ffff00" aria-pressed="false"><span style="--swatch:#ffff00" aria-hidden="true"></span>Amarelo</button>
+            <button type="button" class="annotation-swatch" data-annotation-color="#0000ff" aria-pressed="false"><span style="--swatch:#0000ff" aria-hidden="true"></span>Azul</button>
+          </div>
+          <div class="annotation-other-colors" role="group" aria-label="Outras cores">
+            <button type="button" class="annotation-swatch" data-annotation-color="#16a34a" aria-label="Verde" title="Verde" aria-pressed="false"><span style="--swatch:#16a34a" aria-hidden="true"></span></button>
+            <button type="button" class="annotation-swatch" data-annotation-color="#ffffff" aria-label="Branco" title="Branco" aria-pressed="false"><span style="--swatch:#ffffff" aria-hidden="true"></span></button>
+            <button type="button" class="annotation-swatch" data-annotation-color="#000000" aria-label="Preto" title="Preto" aria-pressed="false"><span style="--swatch:#000000" aria-hidden="true"></span></button>
+            <label>Outra cor <input id="annotationColor" type="color" value="#ff0000" aria-label="Escolher outra cor"></label>
+          </div>
+          <label>Espessura <input id="annotationWidth" type="number" min="1" max="40" step="1" value="6" aria-label="Espessura do traço em pixels"> px</label>
+          <label>Texto <input id="annotationFontSize" type="number" min="8" max="300" step="1" value="36" aria-label="Tamanho do texto em pixels"> px</label>
+        </div>
+        <div class="annotation-toolbar annotation-selection" role="group" aria-label="Editar formato selecionado">
+          <select id="annotationObjectList" aria-label="Selecionar formato para editar" disabled><option value="">Selecionar formato…</option></select>
+          <span class="annotation-size-controls"><span>Tamanho</span><button type="button" id="annotationSmallerBtn" aria-label="Diminuir formato" title="Diminuir formato" disabled>−</button><button type="button" id="annotationLargerBtn" aria-label="Aumentar formato" title="Aumentar formato" disabled>+</button></span>
+          <button type="button" id="annotationEditTextBtn" disabled>Editar texto</button>
+          <button type="button" id="annotationDeleteBtn" disabled>Excluir formato</button>
+        </div>
+        <p id="annotationSelectionStatus" role="status">Escolha uma ferramenta e desenhe sobre a foto.</p>
+        <div class="annotation-canvas-wrap"><canvas id="annotationCanvas" tabindex="0" aria-label="Foto com formatos editáveis. Use a lista para selecionar; setas do teclado movem e os botões de tamanho redimensionam." aria-describedby="annotationSelectionStatus"></canvas></div>
       </div>
-      <div class="annotation-canvas-wrap"><canvas id="annotationCanvas" aria-label="Área para marcar a foto"></canvas></div>
-      <div class="annotation-footer"><small>Seta, linha, retângulo e círculo: clique e arraste. Texto: selecione T e clique onde deseja escrever.</small><div class="annotation-footer-actions"><button type="button" class="secondary" id="annotationCancelBtn">Cancelar</button><button type="button" id="annotationApplyBtn">Aplicar marcações</button></div></div>
+      <div class="annotation-footer"><small>Arraste as alças para redimensionar. Para editar novamente, abra o lápis da foto.</small><div class="annotation-footer-actions"><button type="button" class="secondary" id="annotationCancelBtn">Cancelar</button><button type="button" id="annotationApplyBtn" disabled>Aplicar marcações</button></div></div>
     </div>
   </dialog>
+
   <script>
-    const APP_VERSION = "2026.09.30.6";
+    const APP_VERSION = "2026.09.30.8";
     console.info("[SESE Studio] versão", APP_VERSION);
     const defaultLogo = "data:image/png;base64,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";
     const defaultCorrectImage = "";
@@ -1375,6 +1445,7 @@
       const images = sideImages(current(), side);
       if (index < 0 || index >= images.length) return;
       images.splice(index, 1);
+      if (Array.isArray(current()[side + "Annotations"])) current()[side + "Annotations"].splice(index, 1);
       current()[side + "Image"] = images[0] || "";
       renderPage();
       if (typeof autoSaveProject === "function") autoSaveProject();
@@ -1543,212 +1614,346 @@
       });
     }
 
-    // Editor de marcações das fotos: trabalha sobre uma cópia em canvas e grava a imagem final.
-    const annotationState = { side: null, index: -1, image: null, canvas: null, ctx: null, tool: "select", color: "#e11d48", width: 6, drawing: false, start: null, before: null, history: [] };
+    // A foto original e os objetos ficam separados; a galeria recebe uma prévia renderizada.
+    const annotationState = {
+      side: null, index: -1, page: null, source: '', image: null, canvas: null, ctx: null,
+      tool: 'select', color: '#ff0000', width: 6, fontSize: 36,
+      objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0
+    };
+    const annotationNames = {arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', text:'Texto'};
+    const annotationClone = value => JSON.parse(JSON.stringify(value));
+    const annotationSelected = () => annotationState.objects.find(item => item.id === annotationState.selected);
+    const annotationScreenUnit = () => annotationState.canvas.width / Math.max(1, annotationState.canvas.getBoundingClientRect().width);
 
     function annotationPoint(event) {
-      const canvas = annotationState.canvas;
-      const rect = canvas.getBoundingClientRect();
+      const canvas = annotationState.canvas, rect = canvas.getBoundingClientRect();
       return {
         x: Math.max(0, Math.min(canvas.width, (event.clientX - rect.left) * canvas.width / rect.width)),
         y: Math.max(0, Math.min(canvas.height, (event.clientY - rect.top) * canvas.height / rect.height))
       };
     }
 
-    function annotationDrawPrimitive(ctx, tool, a, b) {
-      const color = annotationState.color;
-      const width = annotationState.width;
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.lineWidth = width;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      if (tool === "rect") {
-        ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-      } else if (tool === "circle") {
-        const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
-        ctx.stroke();
+    function annotationBounds(item) {
+      if (item.tool === 'text') {
+        const ctx = annotationState.ctx;
+        ctx.save(); ctx.font = '700 ' + item.fontSize + 'px Arial';
+        const width = ctx.measureText(item.text).width;
+        ctx.restore();
+        return {x:item.a.x, y:item.a.y, w:Math.max(1,width), h:item.fontSize * 1.2};
+      }
+      return {x:Math.min(item.a.x,item.b.x), y:Math.min(item.a.y,item.b.y), w:Math.abs(item.b.x-item.a.x), h:Math.abs(item.b.y-item.a.y)};
+    }
+
+    function annotationDrawObject(ctx, item) {
+      const {a,b,tool,color,width} = item;
+      ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (tool === 'text') {
+        ctx.font = '700 ' + item.fontSize + 'px Arial'; ctx.textBaseline = 'top';
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, width / 2);
+        ctx.strokeText(item.text,a.x,a.y); ctx.fillText(item.text,a.x,a.y);
+      } else if (tool === 'rect') {
+        ctx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
+      } else if (tool === 'circle') {
+        ctx.beginPath(); ctx.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.abs(b.x-a.x)/2,Math.abs(b.y-a.y)/2,0,0,Math.PI*2); ctx.stroke();
       } else {
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-        if (tool === "arrow") {
-          const angle = Math.atan2(b.y - a.y, b.x - a.x);
-          const head = Math.max(12, width * 3.5);
-          ctx.beginPath();
-          ctx.moveTo(b.x, b.y);
-          ctx.lineTo(b.x - head * Math.cos(angle - Math.PI / 7), b.y - head * Math.sin(angle - Math.PI / 7));
-          ctx.moveTo(b.x, b.y);
-          ctx.lineTo(b.x - head * Math.cos(angle + Math.PI / 7), b.y - head * Math.sin(angle + Math.PI / 7));
-          ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        if (tool === 'arrow') {
+          const angle = Math.atan2(b.y-a.y,b.x-a.x), head = Math.min(Math.hypot(b.x-a.x,b.y-a.y)*0.4,Math.max(12,width*3.5));
+          ctx.beginPath(); ctx.moveTo(b.x-head*Math.cos(angle-Math.PI/7),b.y-head*Math.sin(angle-Math.PI/7));
+          ctx.lineTo(b.x,b.y); ctx.lineTo(b.x-head*Math.cos(angle+Math.PI/7),b.y-head*Math.sin(angle+Math.PI/7)); ctx.stroke();
         }
       }
       ctx.restore();
     }
 
-    function annotationCommitBefore() {
-      if (!annotationState.before || !annotationState.ctx) return;
-      annotationState.history.push(annotationState.before);
-      if (annotationState.history.length > 30) annotationState.history.shift();
-      annotationState.before = null;
+    function annotationHandles(item) {
+      if (item.tool === 'line' || item.tool === 'arrow') return [{key:'a',...item.a},{key:'b',...item.b}];
+      const box = annotationBounds(item);
+      return [{key:'nw',x:box.x,y:box.y},{key:'ne',x:box.x+box.w,y:box.y},{key:'se',x:box.x+box.w,y:box.y+box.h},{key:'sw',x:box.x,y:box.y+box.h}];
+    }
+
+    function annotationRender(selection = true) {
+      const {ctx,canvas,image,ready} = annotationState;
+      if (!ctx || !ready) return;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      annotationState.objects.forEach(item => annotationDrawObject(ctx,item));
+      const item = annotationSelected();
+      if (!selection || !item) return;
+      const unit = annotationScreenUnit(), box = annotationBounds(item), pad = 4*unit;
+      ctx.save(); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5*unit; ctx.setLineDash([5*unit,4*unit]);
+      ctx.strokeRect(box.x-pad,box.y-pad,box.w+pad*2,box.h+pad*2); ctx.setLineDash([]);
+      annotationHandles(item).forEach(point => {
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1465ea';
+        ctx.fillRect(point.x-5*unit,point.y-5*unit,10*unit,10*unit);
+        ctx.strokeRect(point.x-5*unit,point.y-5*unit,10*unit,10*unit);
+      });
+      ctx.restore();
+    }
+
+    function annotationSnapshot() {
+      return annotationClone({objects:annotationState.objects,selected:annotationState.selected});
+    }
+    function annotationRemember(snapshot = annotationSnapshot()) {
+      annotationState.history.push(snapshot);
+      if (annotationState.history.length > 40) annotationState.history.shift();
+      annotationState.future = [];
+    }
+    function annotationUndo(redo = false) {
+      if (annotationState.drag) return;
+      const from = redo ? annotationState.future : annotationState.history;
+      const to = redo ? annotationState.history : annotationState.future;
+      const previous = from.pop(); if (!previous) return;
+      to.push(annotationSnapshot());
+      annotationState.objects = previous.objects; annotationState.selected = previous.selected;
+      annotationSyncControls(); annotationRender();
+    }
+
+    function annotationSyncControls() {
+      const item = annotationSelected();
+      if (item) {
+        annotationState.color = item.color; annotationState.width = item.width;
+        if (item.tool === 'text') annotationState.fontSize = item.fontSize;
+      }
+      $('annotationColor').value = annotationState.color;
+      $('annotationWidth').value = annotationState.width;
+      $('annotationFontSize').value = Math.round(annotationState.fontSize);
+      document.querySelectorAll('[data-annotation-color]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.annotationColor === annotationState.color.toLowerCase())));
+      const list = $('annotationObjectList'); list.replaceChildren(new Option('Selecionar formato…',''));
+      annotationState.objects.forEach((object,index) => list.add(new Option((index+1)+'. '+annotationNames[object.tool]+(object.tool === 'text' ? ': '+object.text.slice(0,30) : ''),object.id)));
+      list.value = item ? item.id : '';
+      list.disabled = !annotationState.objects.length;
+      ['annotationSmallerBtn','annotationLargerBtn','annotationDeleteBtn'].forEach(id => $(id).disabled = !item);
+      $('annotationEditTextBtn').disabled = !item || item.tool !== 'text';
+      $('annotationFontSize').disabled = !!item && item.tool !== 'text';
+      $('annotationUndoBtn').disabled = !annotationState.history.length;
+      $('annotationRedoBtn').disabled = !annotationState.future.length;
+      $('annotationClearBtn').disabled = !annotationState.objects.length;
+      $('annotationApplyBtn').disabled = !annotationState.ready;
+      $('annotationSelectionStatus').textContent = item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto.');
     }
 
     function annotationSetTool(tool) {
       annotationState.tool = tool;
-      document.querySelectorAll("[data-annotation-tool]").forEach(button => button.classList.toggle("active", button.dataset.annotationTool === tool));
-      if (annotationState.canvas) annotationState.canvas.style.cursor = tool === "select" ? "default" : tool === "text" ? "text" : "crosshair";
+      document.querySelectorAll('[data-annotation-tool]').forEach(button => {
+        const active = button.dataset.annotationTool === tool;
+        button.classList.toggle('active',active); button.setAttribute('aria-pressed',String(active));
+      });
+      if (tool !== 'select') annotationState.selected = null;
+      if (annotationState.canvas) annotationState.canvas.style.cursor = tool === 'select' ? 'default' : tool === 'text' ? 'text' : 'crosshair';
+      annotationSyncControls(); annotationRender();
     }
 
-    function annotationUndo() {
-      const previous = annotationState.history.pop();
-      if (!previous || !annotationState.ctx) return;
-      annotationState.ctx.putImageData(previous, 0, 0);
+    function annotationTranslate(item,dx,dy) {
+      item.a.x += dx; item.a.y += dy;
+      if (item.b) { item.b.x += dx; item.b.y += dy; }
+    }
+    function annotationKeepInside(item) {
+      const box = annotationBounds(item), canvas = annotationState.canvas;
+      annotationTranslate(item,Math.max(-box.x,Math.min(0,canvas.width-box.x-box.w)),Math.max(-box.y,Math.min(0,canvas.height-box.y-box.h)));
+    }
+    function annotationScale(item,factor) {
+      const box = annotationBounds(item), canvas = annotationState.canvas;
+      factor = Math.min(factor,canvas.width/Math.max(1,box.w),canvas.height/Math.max(1,box.h));
+      if (item.tool === 'text') {
+        const next = Math.max(8,Math.min(300,item.fontSize*factor)); factor = next/item.fontSize;
+        item.fontSize = next;
+      }
+      const cx = box.x+box.w/2, cy = box.y+box.h/2;
+      item.a.x = cx+(item.a.x-cx)*factor; item.a.y = cy+(item.a.y-cy)*factor;
+      if (item.b) { item.b.x = cx+(item.b.x-cx)*factor; item.b.y = cy+(item.b.y-cy)*factor; }
+      annotationKeepInside(item);
+    }
+    function annotationResizeSelected(factor) {
+      const item = annotationSelected(); if (!item) return;
+      const box = annotationBounds(item);
+      if (factor < 1 && Math.max(box.w,box.h) < 12) return;
+      annotationRemember(); annotationScale(item,factor); annotationSyncControls(); annotationRender();
+    }
+    function annotationChangeStyle(key,value) {
+      const item = annotationSelected();
+      if (item && item[key] !== value) {
+        annotationRemember();
+        if (key === 'fontSize') annotationScale(item,value/item.fontSize); else item[key] = value;
+      }
+      annotationState[key] = value;
+      annotationSyncControls(); annotationRender();
+    }
+    function annotationDelete() {
+      if (!annotationSelected()) return;
+      annotationRemember(); annotationState.objects = annotationState.objects.filter(item => item.id !== annotationState.selected);
+      annotationState.selected = null; annotationSyncControls(); annotationRender();
+    }
+    function annotationEditText() {
+      const item = annotationSelected(); if (!item || item.tool !== 'text') return;
+      const value = prompt('Editar texto da marcação:',item.text);
+      if (value === null || !value.trim() || value.trim() === item.text) return;
+      annotationRemember(); item.text = value.trim(); annotationScale(item,1); annotationSyncControls(); annotationRender();
     }
 
-    function annotationResetCanvas(image) {
-      const canvas = annotationState.canvas;
-      const maxDimension = 1280;
-      const ratio = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
-      const ctx = canvas.getContext("2d");
-      annotationState.ctx = ctx;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      annotationState.history = [];
-      annotationState.before = null;
-    }
-
-    function openAnnotationEditor(side, index) {
-      const images = sideImages(current(), side);
-      const src = images[index];
-      if (!src) return;
-      const dialog = $("annotationDialog");
-      const canvas = $("annotationCanvas");
-      annotationState.side = side;
-      annotationState.index = index;
-      annotationState.canvas = canvas;
-      annotationState.image = new Image();
-      annotationState.image.onload = () => {
-        annotationResetCanvas(annotationState.image);
-        annotationSetTool("select");
+    function openAnnotationEditor(side,index) {
+      const page = current(), src = sideImages(page,side)[index]; if (!src) return;
+      const saved = page[side+'Annotations']?.[index];
+      const editable = saved && saved.version === 1 && typeof saved.source === 'string' && Array.isArray(saved.objects);
+      const token = ++annotationState.loadToken;
+      Object.assign(annotationState,{side,index,page,source:editable ? saved.source : src,canvas:$('annotationCanvas'),ctx:null,image:null,ready:false,selected:null,drag:null,history:[],future:[],objects:editable ? annotationClone(saved.objects) : []});
+      annotationState.canvas.width = 1; annotationState.canvas.height = 1;
+      annotationSetTool('select');
+      const dialog = $('annotationDialog'); if (!dialog.open) dialog.showModal();
+      const image = new Image(); annotationState.image = image;
+      image.onload = () => {
+        if (token !== annotationState.loadToken || !dialog.open) return;
+        const ratio = Math.min(1,1280/Math.max(image.naturalWidth,image.naturalHeight));
+        annotationState.canvas.width = editable && saved.width > 0 ? saved.width : Math.max(1,Math.round(image.naturalWidth*ratio));
+        annotationState.canvas.height = editable && saved.height > 0 ? saved.height : Math.max(1,Math.round(image.naturalHeight*ratio));
+        annotationState.ctx = annotationState.canvas.getContext('2d'); annotationState.ready = true;
+        annotationSyncControls(); annotationRender();
       };
-      annotationState.image.onerror = () => {
-        alert("Não foi possível abrir esta foto para marcação.");
-        closeAnnotationEditor();
-      };
-      annotationState.image.src = src;
-      if (!dialog.open) dialog.showModal();
+      image.onerror = () => { if (token !== annotationState.loadToken) return; alert('Não foi possível abrir esta foto para marcação.'); closeAnnotationEditor(); };
+      image.src = annotationState.source;
     }
-
     function closeAnnotationEditor() {
-      const dialog = $("annotationDialog");
-      if (dialog && dialog.open) dialog.close();
-      annotationState.side = null;
-      annotationState.index = -1;
-      annotationState.image = null;
-      annotationState.history = [];
+      annotationState.loadToken++;
+      if ($('annotationDialog').open) $('annotationDialog').close();
+      Object.assign(annotationState,{side:null,index:-1,page:null,image:null,ctx:null,ready:false,objects:[],selected:null,drag:null,history:[],future:[]});
     }
-
     function applyAnnotationEditor() {
-      const canvas = annotationState.canvas;
-      if (!canvas || !annotationState.image || annotationState.side === null || annotationState.index < 0) { closeAnnotationEditor(); return; }
+      const {canvas,page,side,index,source,ready} = annotationState;
+      if (!ready || !page || side === null || index < 0 || annotationState.drag) return;
+      if (!pages.includes(page)) { closeAnnotationEditor(); return; }
       try {
-        let data = canvas.toDataURL("image/jpeg", 0.8);
-        if (data.length > 500000) data = canvas.toDataURL("image/jpeg", 0.55);
-        if (data.length > 900000) {
-          alert("A foto anotada ficou muito grande. Escolha uma imagem menor.");
-          return;
-        }
-        const images = sideImages(current(), annotationState.side);
-        if (!images[annotationState.index]) return;
-        images[annotationState.index] = data;
-        current()[annotationState.side + "Image"] = images[0] || "";
-        renderPage();
-        autoSaveProject();
-        if (typeof scheduleCloudSave === "function") scheduleCloudSave();
+        annotationRender(false);
+        let data = annotationState.objects.length ? canvas.toDataURL('image/jpeg',0.8) : source;
+        if (data.length > 500000 && annotationState.objects.length) data = canvas.toDataURL('image/jpeg',0.55);
+        if (data.length > 900000) { alert('A foto anotada ficou muito grande. Escolha uma imagem menor.'); annotationRender(); return; }
+        const images = sideImages(page,side); if (!images[index]) return;
+        if (!Array.isArray(page[side+'Annotations'])) page[side+'Annotations'] = [];
+        page[side+'Annotations'][index] = annotationState.objects.length ? {version:1,source,width:canvas.width,height:canvas.height,objects:annotationClone(annotationState.objects)} : null;
+        images[index] = data; page[side+'Image'] = images[0] || '';
+        renderPage(); autoSaveProject();
+        if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
         closeAnnotationEditor();
       } catch (err) {
-        console.error("Falha ao aplicar marcação:", err);
-        alert("Não foi possível salvar a marcação nesta foto.");
+        console.error('Falha ao aplicar marcação:',err); annotationRender(); alert('Não foi possível salvar a marcação nesta foto.');
       }
     }
 
+    function annotationHit(point,item) {
+      const tolerance = 10*annotationScreenUnit()+item.width/2;
+      if (item.tool === 'line' || item.tool === 'arrow') {
+        const dx = item.b.x-item.a.x, dy = item.b.y-item.a.y;
+        const t = Math.max(0,Math.min(1,((point.x-item.a.x)*dx+(point.y-item.a.y)*dy)/(dx*dx+dy*dy || 1)));
+        return Math.hypot(point.x-item.a.x-t*dx,point.y-item.a.y-t*dy) <= tolerance;
+      }
+      const b = annotationBounds(item);
+      return point.x >= b.x-tolerance && point.x <= b.x+b.w+tolerance && point.y >= b.y-tolerance && point.y <= b.y+b.h+tolerance;
+    }
     function annotationPointerDown(event) {
-      if (!annotationState.canvas || annotationState.tool === "select") return;
-      event.preventDefault();
-      const point = annotationPoint(event);
-      const ctx = annotationState.ctx;
-      if (annotationState.tool === "text") {
-        const value = prompt("Digite o texto da marcação:");
-        if (!value || !value.trim()) return;
-        annotationState.history.push(ctx.getImageData(0, 0, annotationState.canvas.width, annotationState.canvas.height));
-        ctx.save();
-        ctx.font = "700 " + Math.max(18, Math.round(annotationState.canvas.width / 30)) + "px Arial";
-        ctx.lineWidth = Math.max(3, annotationState.width / 2);
-        ctx.strokeStyle = "#ffffff";
-        ctx.fillStyle = annotationState.color;
-        ctx.lineJoin = "round";
-        ctx.strokeText(value.trim(), point.x, point.y);
-        ctx.fillText(value.trim(), point.x, point.y);
-        ctx.restore();
-        return;
+      if (!annotationState.ready || annotationState.drag || (event.button !== undefined && event.button !== 0)) return;
+      event.preventDefault(); annotationState.canvas.focus({preventScroll:true});
+      const point = annotationPoint(event), before = annotationSnapshot();
+      if (annotationState.tool === 'select') {
+        let item = annotationSelected();
+        const handle = item && annotationHandles(item).find(p => Math.hypot(point.x-p.x,point.y-p.y) <= 14*annotationScreenUnit());
+        if (!handle) item = [...annotationState.objects].reverse().find(object => annotationHit(point,object));
+        annotationState.selected = item ? item.id : null;
+        if (item) annotationState.drag = {type:handle ? 'resize' : 'move',handle:handle?.key,start:point,item:annotationClone(item),before,pointerId:event.pointerId};
+      } else if (annotationState.tool === 'text') {
+        const value = prompt('Digite o texto da marcação:'); if (!value || !value.trim()) return;
+        annotationRemember(before);
+        const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'text',a:point,color:annotationState.color,width:annotationState.width,fontSize:annotationState.fontSize,text:value.trim()};
+        annotationState.objects.push(item); annotationState.selected = item.id; annotationScale(item,1); annotationSetTool('select');
+      } else {
+        const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:annotationState.tool,a:point,b:{...point},color:annotationState.color,width:annotationState.width};
+        annotationState.objects.push(item); annotationState.selected = item.id;
+        annotationState.drag = {type:'draw',start:point,before,pointerId:event.pointerId};
       }
-      annotationState.drawing = true;
-      annotationState.start = point;
-      annotationState.before = ctx.getImageData(0, 0, annotationState.canvas.width, annotationState.canvas.height);
-      annotationState.canvas.setPointerCapture?.(event.pointerId);
+      if (annotationState.drag) annotationState.canvas.setPointerCapture?.(event.pointerId);
+      annotationSyncControls(); annotationRender();
     }
-
     function annotationPointerMove(event) {
-      if (!annotationState.drawing || !annotationState.start) return;
+      const drag = annotationState.drag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
       event.preventDefault();
-      const point = annotationPoint(event);
-      const ctx = annotationState.ctx;
-      ctx.putImageData(annotationState.before, 0, 0);
-      annotationDrawPrimitive(ctx, annotationState.tool, annotationState.start, point);
+      const point = annotationPoint(event), item = annotationSelected(); if (!item) return;
+      if (drag.type === 'draw') item.b = point;
+      else if (drag.type === 'move') {
+        Object.assign(item,annotationClone(drag.item)); annotationTranslate(item,point.x-drag.start.x,point.y-drag.start.y); annotationKeepInside(item);
+      } else if (item.tool === 'line' || item.tool === 'arrow') item[drag.handle] = point;
+      else {
+        const b = annotationBounds(drag.item), west = drag.handle.includes('w'), north = drag.handle.includes('n');
+        const anchor = {x:west ? b.x+b.w : b.x,y:north ? b.y+b.h : b.y};
+        const width = Math.max(8,west ? anchor.x-point.x : point.x-anchor.x), height = Math.max(8,north ? anchor.y-point.y : point.y-anchor.y);
+        if (item.tool === 'text') {
+          Object.assign(item,annotationClone(drag.item));
+          annotationScale(item,Math.max(width/Math.max(1,b.w),height/Math.max(1,b.h)));
+          const next = annotationBounds(item); item.a = {x:west ? anchor.x-next.w : anchor.x,y:north ? anchor.y-next.h : anchor.y};
+        } else { item.a = {x:west ? anchor.x-width : anchor.x,y:north ? anchor.y-height : anchor.y}; item.b = {x:item.a.x+width,y:item.a.y+height}; }
+        annotationKeepInside(item);
+      }
+      annotationRender();
     }
-
     function annotationPointerUp(event) {
-      if (!annotationState.drawing || !annotationState.start) return;
-      event.preventDefault();
-      const point = annotationPoint(event);
-      const ctx = annotationState.ctx;
-      ctx.putImageData(annotationState.before, 0, 0);
-      annotationDrawPrimitive(ctx, annotationState.tool, annotationState.start, point);
-      annotationCommitBefore();
-      annotationState.drawing = false;
-      annotationState.start = null;
-      annotationState.canvas.releasePointerCapture?.(event.pointerId);
+      const drag = annotationState.drag; if (!drag || drag.pointerId !== event.pointerId) return;
+      annotationPointerMove(event);
+      const item = annotationSelected();
+      if (drag.type === 'draw' && item && (Math.hypot(item.b.x-item.a.x,item.b.y-item.a.y) < 4*annotationScreenUnit() || (['rect','circle'].includes(item.tool) && Math.min(Math.abs(item.b.x-item.a.x),Math.abs(item.b.y-item.a.y)) < 3*annotationScreenUnit()))) {
+        annotationState.objects = drag.before.objects; annotationState.selected = drag.before.selected;
+      } else if (JSON.stringify(drag.before.objects) !== JSON.stringify(annotationState.objects)) annotationRemember(drag.before);
+      annotationState.drag = null;
+      if (annotationState.canvas.hasPointerCapture?.(event.pointerId)) annotationState.canvas.releasePointerCapture(event.pointerId);
+      annotationSetTool('select');
+    }
+    function annotationPointerCancel(event) {
+      const drag = annotationState.drag; if (!drag || drag.pointerId !== event.pointerId) return;
+      annotationState.objects = drag.before.objects; annotationState.selected = drag.before.selected; annotationState.drag = null;
+      if (annotationState.canvas.hasPointerCapture?.(event.pointerId)) annotationState.canvas.releasePointerCapture(event.pointerId);
+      annotationSyncControls(); annotationRender();
     }
 
-    $("annotationCanvas").addEventListener("pointerdown", annotationPointerDown);
-    $("annotationCanvas").addEventListener("pointermove", annotationPointerMove);
-    $("annotationCanvas").addEventListener("pointerup", annotationPointerUp);
-    $("annotationCanvas").addEventListener("pointercancel", annotationPointerUp);
-    document.querySelectorAll("[data-annotation-tool]").forEach(button => button.addEventListener("click", () => annotationSetTool(button.dataset.annotationTool)));
-    $("annotationColor").addEventListener("input", e => annotationState.color = e.target.value);
-    $("annotationWidth").addEventListener("change", e => annotationState.width = Number(e.target.value) || 6);
-    $("annotationUndoBtn").addEventListener("click", annotationUndo);
-    $("annotationClearBtn").addEventListener("click", () => {
-      if (!annotationState.ctx || !annotationState.image) return;
-      annotationState.history.push(annotationState.ctx.getImageData(0, 0, annotationState.canvas.width, annotationState.canvas.height));
-      annotationState.ctx.clearRect(0, 0, annotationState.canvas.width, annotationState.canvas.height);
-      annotationState.ctx.drawImage(annotationState.image, 0, 0, annotationState.canvas.width, annotationState.canvas.height);
+    $('annotationCanvas').addEventListener('pointerdown',annotationPointerDown);
+    $('annotationCanvas').addEventListener('pointermove',annotationPointerMove);
+    $('annotationCanvas').addEventListener('pointerup',annotationPointerUp);
+    $('annotationCanvas').addEventListener('pointercancel',annotationPointerCancel);
+    $('annotationCanvas').addEventListener('lostpointercapture',annotationPointerCancel);
+    $('annotationCanvas').addEventListener('dblclick',annotationEditText);
+    document.querySelectorAll('[data-annotation-tool]').forEach(button => button.addEventListener('click',() => annotationSetTool(button.dataset.annotationTool)));
+    document.querySelectorAll('[data-annotation-color]').forEach(button => button.addEventListener('click',() => annotationChangeStyle('color',button.dataset.annotationColor)));
+    $('annotationColor').addEventListener('input',event => annotationChangeStyle('color',event.target.value));
+    $('annotationWidth').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 1) annotationChangeStyle('width',Math.min(40,value)); else annotationSyncControls(); });
+    $('annotationFontSize').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 8) annotationChangeStyle('fontSize',Math.min(300,value)); else annotationSyncControls(); });
+    $('annotationObjectList').addEventListener('change',event => { annotationState.selected = event.target.value || null; annotationSetTool('select'); });
+    $('annotationSmallerBtn').addEventListener('click',() => annotationResizeSelected(1/1.15));
+    $('annotationLargerBtn').addEventListener('click',() => annotationResizeSelected(1.15));
+    $('annotationEditTextBtn').addEventListener('click',annotationEditText);
+    $('annotationDeleteBtn').addEventListener('click',annotationDelete);
+    $('annotationUndoBtn').addEventListener('click',() => annotationUndo());
+    $('annotationRedoBtn').addEventListener('click',() => annotationUndo(true));
+    $('annotationClearBtn').addEventListener('click',() => {
+      if (!annotationState.objects.length) return;
+      annotationRemember(); annotationState.objects = []; annotationState.selected = null; annotationSyncControls(); annotationRender();
     });
-    $("annotationApplyBtn").addEventListener("click", applyAnnotationEditor);
-    $("annotationCancelBtn").addEventListener("click", closeAnnotationEditor);
-    $("annotationCloseBtn").addEventListener("click", closeAnnotationEditor);
-    $("annotationDialog").addEventListener("cancel", event => { event.preventDefault(); closeAnnotationEditor(); });
-    document.addEventListener("keydown", event => {
-      const dialog = $("annotationDialog");
-      if (!dialog || !dialog.open) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); annotationUndo(); }
+    $('annotationApplyBtn').addEventListener('click',applyAnnotationEditor);
+    $('annotationCancelBtn').addEventListener('click',closeAnnotationEditor);
+    $('annotationCloseBtn').addEventListener('click',closeAnnotationEditor);
+    $('annotationDialog').addEventListener('cancel',event => { event.preventDefault(); closeAnnotationEditor(); });
+    $('annotationDialog').addEventListener('keydown',event => {
+      event.stopPropagation();
+      if (event.target.matches('input,textarea,select,[contenteditable="true"]')) return;
+      if ((event.ctrlKey || event.metaKey) && ['z','y'].includes(event.key.toLowerCase())) { event.preventDefault(); annotationUndo(event.shiftKey || event.key.toLowerCase() === 'y'); }
+      else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); annotationDelete(); }
+      else if (event.key === '+' || event.key === '=') { event.preventDefault(); annotationResizeSelected(1.15); }
+      else if (event.key === '-') { event.preventDefault(); annotationResizeSelected(1/1.15); }
+      else if (event.key.startsWith('Arrow') && annotationSelected()) {
+        event.preventDefault(); annotationRemember();
+        const step = event.shiftKey ? 10 : 1, item = annotationSelected();
+        annotationTranslate(item,event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0,event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0);
+        annotationKeepInside(item); annotationSyncControls(); annotationRender();
+      }
     });
+    window.addEventListener('resize',() => { if ($('annotationDialog').open) annotationRender(); });
+
 
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -1874,6 +2079,8 @@
       clone.rightImage = "";
       clone.leftImages = [];
       clone.rightImages = [];
+      clone.leftAnnotations = [];
+      clone.rightAnnotations = [];
       pages.push(clone);
       currentPage = pages.length - 1;
   
@@ -1932,6 +2139,8 @@
       p.rightImage = "";
       p.leftImages = [];
       p.rightImages = [];
+      p.leftAnnotations = [];
+      p.rightAnnotations = [];
       renderPage();
       autoSaveProject();
     }
@@ -2399,7 +2608,7 @@
       });
 
       card.addEventListener("keydown", (e) => {
-        if (document.body.classList.contains("tv-mode")) return;
+        if (e.target !== card || document.body.classList.contains("tv-mode")) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           input.click();
@@ -2614,6 +2823,14 @@
     applyMobileAccessibility();
 
     requestAnimationFrame(fitEditorSlide);
+    // Ao abrir o HTML baixado, restaura também os objetos editáveis do backup local.
+    window.addEventListener('load', async () => {
+      if (location.protocol !== 'file:' || typeof scheduleCloudSave === 'function') return;
+      await initializeLocalProject();
+      document.querySelector('.app').inert = false;
+      $('syncStatus').textContent = 'Modo local · alterações salvas neste dispositivo.';
+      $('syncRetry').hidden = true;
+    }, {once:true});
   </script>
   <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-database-compat.js"></script>
