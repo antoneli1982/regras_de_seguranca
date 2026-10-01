@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2026.09.30.5" />
+  <meta name="app-version" content="2026.10.01.1" />
   <title>SESE Studio - Regras de Segurança</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1300,7 +1300,7 @@ License: bitstream-vera
         <input id="rightUpload" type="file" accept="image/*" multiple>
         <div class="annotation-help">
           <strong>Marcar pontos importantes</strong>
-          <p>Depois de anexar uma foto, clique no ícone de lápis sobre ela. Desenhe e selecione formatos para mover, aumentar ou mudar a cor. Vermelho, amarelo e azul ficam em destaque.</p>
+          <p>Depois de anexar uma foto, clique no ícone de lápis sobre ela. Desenhe e selecione formatos para mover, aumentar ou mudar a cor. Use a Lupa para ampliar uma área em um círculo e gravá-la na foto.</p>
         </div>
       </div>
 
@@ -1428,6 +1428,7 @@ License: bitstream-vera
           <button type="button" data-annotation-tool="line" aria-pressed="false">╱ Linha</button>
           <button type="button" data-annotation-tool="rect" aria-pressed="false">□ Retângulo</button>
           <button type="button" data-annotation-tool="circle" aria-pressed="false">○ Círculo</button>
+          <button type="button" data-annotation-tool="magnifier" aria-pressed="false" title="Ampliar uma área da foto dentro de um círculo editável"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg> Lupa</button>
           <button type="button" data-annotation-tool="text" aria-pressed="false">T Texto</button>
           <button type="button" data-annotation-tool="patch" aria-pressed="false" title="Cobrir marcações antigas que fazem parte da foto">▧ Apagar antigas</button>
           <span class="toolbar-sep" aria-hidden="true"></span>
@@ -1457,6 +1458,12 @@ License: bitstream-vera
           <button type="button" id="annotationEditTextBtn" disabled>Editar texto</button>
           <button type="button" id="annotationDeleteBtn" disabled>Excluir formato</button>
         </div>
+        <div id="annotationMagnifierPanel" class="annotation-options" hidden>
+          <div class="annotation-toolbar" role="group" aria-label="Ajustes da lupa">
+            <label for="annotationMagnification">Ampliação <select id="annotationMagnification"><option value="1.5">1,5×</option><option value="2" selected>2×</option><option value="2.5">2,5×</option><option value="3">3×</option><option value="4">4×</option><option value="6">6×</option></select></label>
+          </div>
+          <p>Arraste sobre o detalhe para criar o círculo ou clique para inserir. Mova pelo centro, ajuste o tamanho pelas alças e escolha a ampliação. Clique em Aplicar marcações para gravar a lupa nessa área da foto.</p>
+        </div>
         <div id="annotationTextPanel" class="annotation-options" hidden>
           <div class="annotation-toolbar" role="group" aria-label="Fonte e modelo do texto">
             <label>Fonte <select id="annotationFontFamily" aria-label="Fonte do texto"><option value="SESE Sans">Moderna · sem serifa</option><option value="SESE Serif">Clássica · com serifa</option><option value="SESE Mono">Técnica · monoespaçada</option><option value="Arial">Arial (sistema)</option></select></label>
@@ -1482,7 +1489,7 @@ License: bitstream-vera
   </dialog>
 
   <script>
-    const APP_VERSION = "2026.09.30.9";
+    const APP_VERSION = "2026.10.01.1";
     console.info("[SESE Studio] versão", APP_VERSION);
     const defaultLogo = "data:image/png;base64,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";
     const defaultCorrectImage = "";
@@ -1709,12 +1716,12 @@ License: bitstream-vera
     // A foto original e os objetos ficam separados; a galeria recebe uma prévia renderizada.
     const annotationState = {
       side: null, index: -1, page: null, source: '', image: null, canvas: null, ctx: null,
-      tool: 'select', color: '#ff0000', width: 6, fontSize: 36,
+      tool: 'select', color: '#ff0000', width: 6, fontSize: 36, magnification: 2,
       fontFamily:'SESE Sans',bold:true,italic:false,underline:false,textModel:'outline',textDraft:'',
       repairMode:'clone',repairSample:null,repairColor:'#ffffff',samplePicking:false,
       objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0
     };
-    const annotationNames = {arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', text:'Texto', patch:'Retoque de marcação antiga'};
+    const annotationNames = {arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', magnifier:'Lupa', text:'Texto', patch:'Retoque de marcação antiga'};
     const annotationClone = value => JSON.parse(JSON.stringify(value));
     const annotationSelected = () => annotationState.objects.find(item => item.id === annotationState.selected);
     const annotationScreenUnit = () => annotationState.canvas.width / Math.max(1, annotationState.canvas.getBoundingClientRect().width);
@@ -1824,6 +1831,48 @@ License: bitstream-vera
       return {x:Math.min(item.a.x,item.b.x), y:Math.min(item.a.y,item.b.y), w:Math.abs(item.b.x-item.a.x), h:Math.abs(item.b.y-item.a.y)};
     }
 
+    function annotationMagnification(item) {
+      const value = Number(item.magnification);
+      return Number.isFinite(value) ? Math.max(1.5,Math.min(6,value)) : 2;
+    }
+    function annotationDrawMagnifier(ctx,item) {
+      const box = annotationBounds(item), radius = Math.min(box.w,box.h)/2;
+      if (radius <= 0) return;
+      const cx = box.x+box.w/2, cy = box.y+box.h/2;
+      const {canvas,image,objects} = annotationState, zoom = annotationMagnification(item);
+      // Sempre amostra a foto-base: não captura alças, nem amplia outras lupas.
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.clip();
+      ctx.translate(cx,cy); ctx.scale(zoom,zoom); ctx.translate(-cx,-cy);
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      objects.filter(object => object.tool === 'patch').forEach(object => annotationDrawPatch(ctx,object));
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
+    }
+    function annotationOrderedObjects() {
+      const objects = annotationState.objects;
+      // Retoques na base, lupas sobre a foto, setas/textos sobre as lupas.
+      return [...objects.filter(item => item.tool === 'patch'),
+        ...objects.filter(item => item.tool === 'magnifier'),
+        ...objects.filter(item => !['patch','magnifier'].includes(item.tool))];
+    }
+    function annotationDrawCircleBounds(item,start,point) {
+      const canvas = annotationState.canvas;
+      const dx = point.x-start.x, dy = point.y-start.y;
+      const west = dx < 0, north = dy < 0;
+      const size = Math.min(Math.max(Math.abs(dx),Math.abs(dy)),
+        west ? start.x : canvas.width-start.x,north ? start.y : canvas.height-start.y);
+      item.a = {x:west ? start.x-size : start.x,y:north ? start.y-size : start.y};
+      item.b = {x:item.a.x+size,y:item.a.y+size};
+    }
+    function annotationInsertDefaultMagnifier(item,center) {
+      const canvas = annotationState.canvas, size = Math.min(canvas.width,canvas.height)*0.3;
+      item.a = {x:center.x-size/2,y:center.y-size/2};
+      item.b = {x:center.x+size/2,y:center.y+size/2};
+      annotationKeepInside(item);
+    }
+
     function annotationDrawObject(ctx, item) {
       const {a,b,tool,color,width} = item;
       ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
@@ -1832,6 +1881,8 @@ License: bitstream-vera
         annotationDrawText(ctx,item);
       } else if (tool === 'patch') {
         annotationDrawPatch(ctx,item);
+      } else if (tool === 'magnifier') {
+        annotationDrawMagnifier(ctx,item);
       } else if (tool === 'rect') {
         ctx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
       } else if (tool === 'circle') {
@@ -1859,8 +1910,7 @@ License: bitstream-vera
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(image,0,0,canvas.width,canvas.height);
       // Retoca a foto-base, mantendo os formatos editáveis acima do retoque.
-      annotationState.objects.filter(item => item.tool === 'patch').forEach(item => annotationDrawObject(ctx,item));
-      annotationState.objects.filter(item => item.tool !== 'patch').forEach(item => annotationDrawObject(ctx,item));
+      annotationOrderedObjects().forEach(item => annotationDrawObject(ctx,item));
       if (selection && annotationState.tool === 'patch' && annotationState.repairSample && annotationState.repairMode === 'clone') {
         const p = annotationState.repairSample, unit = annotationScreenUnit();
         ctx.save(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3*unit; ctx.beginPath(); ctx.arc(p.x,p.y,8*unit,0,Math.PI*2); ctx.stroke();
@@ -1907,10 +1957,13 @@ License: bitstream-vera
           Object.keys(annotationTextDefaults).forEach(key => annotationState[key] = style[key]);
         }
         if (item.tool === 'patch') { annotationState.repairMode = item.repairMode; annotationState.repairColor = item.color; }
+        if (item.tool === 'magnifier') annotationState.magnification = annotationMagnification(item);
       }
       $('annotationColor').value = annotationState.color;
       $('annotationWidth').value = annotationState.width;
       $('annotationFontSize').value = Math.round(annotationState.fontSize);
+      $('annotationMagnifierPanel').hidden = !(item?.tool === 'magnifier' || annotationState.tool === 'magnifier');
+      $('annotationMagnification').value = String(annotationState.magnification);
       const isText = item?.tool === 'text', textPanel = isText || annotationState.tool === 'text';
       $('annotationTextPanel').hidden = !textPanel;
       $('annotationRepairPanel').hidden = !(item?.tool === 'patch' || annotationState.tool === 'patch');
@@ -1938,6 +1991,8 @@ License: bitstream-vera
       $('annotationClearBtn').disabled = !annotationState.objects.length;
       $('annotationApplyBtn').disabled = !annotationState.ready;
       $('annotationSelectionStatus').textContent = annotationState.samplePicking ? (annotationState.repairMode === 'solid' ? 'Clique na foto para capturar a cor do fundo.' : 'Clique no centro de uma área limpa da foto para usar no retoque.') : annotationState.tool === 'patch' ? (annotationState.repairMode === 'clone' && !annotationState.repairSample ? '1. Clique em uma área limpa. 2. Arraste sobre a marcação antiga.' : 'Arraste sobre a marcação antiga para cobri-la. Você pode desfazer o retoque.') : annotationState.tool === 'text' ? 'Escreva no campo Texto da marcação e clique na foto para inserir.' : item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto.');
+      if (annotationState.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa: arraste para delimitar o círculo ou clique no detalhe. Depois ajuste a ampliação e aplique.';
+      else if (item?.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa selecionada · '+annotationMagnification(item).toLocaleString('pt-BR')+'×. Arraste para mover; alças ou − / + mudam o círculo. Aplicar marcações grava o resultado.';
     }
 
     function annotationSetTool(tool) {
@@ -2058,6 +2113,7 @@ License: bitstream-vera
         return Math.hypot(point.x-item.a.x-t*dx,point.y-item.a.y-t*dy) <= tolerance;
       }
       const b = annotationBounds(item);
+      if (item.tool === 'magnifier') return Math.hypot(point.x-b.x-b.w/2,point.y-b.y-b.h/2) <= Math.min(b.w,b.h)/2+tolerance;
       return point.x >= b.x-tolerance && point.x <= b.x+b.w+tolerance && point.y >= b.y-tolerance && point.y <= b.y+b.h+tolerance;
     }
     function annotationPointerDown(event) {
@@ -2070,7 +2126,7 @@ License: bitstream-vera
         let item = annotationSelected();
         const handle = item && annotationHandles(item).find(p => Math.hypot(point.x-p.x,point.y-p.y) <= 14*annotationScreenUnit());
         if (!handle) {
-          const ordered = [...annotationState.objects.filter(object => object.tool === 'patch'),...annotationState.objects.filter(object => object.tool !== 'patch')];
+          const ordered = annotationOrderedObjects();
           item = ordered.reverse().find(object => annotationHit(point,object));
         }
         annotationState.selected = item ? item.id : null;
@@ -2084,6 +2140,7 @@ License: bitstream-vera
       } else {
         const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:annotationState.tool,a:point,b:{...point},color:annotationState.color,width:annotationState.width};
         if (item.tool === 'patch') { item.repairMode = annotationState.repairMode; item.sample = annotationState.repairSample ? {...annotationState.repairSample} : null; item.color = annotationState.repairColor; }
+        if (item.tool === 'magnifier') item.magnification = annotationState.magnification;
         annotationState.objects.push(item); annotationState.selected = item.id;
         annotationState.drag = {type:'draw',start:point,before,pointerId:event.pointerId};
       }
@@ -2095,7 +2152,10 @@ License: bitstream-vera
       if (!drag || drag.pointerId !== event.pointerId) return;
       event.preventDefault();
       const point = annotationPoint(event), item = annotationSelected(); if (!item) return;
-      if (drag.type === 'draw') item.b = point;
+      if (drag.type === 'draw') {
+        if (item.tool === 'magnifier') annotationDrawCircleBounds(item,drag.start,point);
+        else item.b = point;
+      }
       else if (drag.type === 'move') {
         Object.assign(item,annotationClone(drag.item)); annotationTranslate(item,point.x-drag.start.x,point.y-drag.start.y); annotationKeepInside(item);
       } else if (item.tool === 'line' || item.tool === 'arrow') item[drag.handle] = point;
@@ -2103,7 +2163,11 @@ License: bitstream-vera
         const b = annotationBounds(drag.item), west = drag.handle.includes('w'), north = drag.handle.includes('n');
         const anchor = {x:west ? b.x+b.w : b.x,y:north ? b.y+b.h : b.y};
         const width = Math.max(8,west ? anchor.x-point.x : point.x-anchor.x), height = Math.max(8,north ? anchor.y-point.y : point.y-anchor.y);
-        if (item.tool === 'text') {
+        if (item.tool === 'magnifier') {
+          const size = Math.min(Math.max(8,width,height),west ? anchor.x : annotationState.canvas.width-anchor.x,north ? anchor.y : annotationState.canvas.height-anchor.y);
+          item.a = {x:west ? anchor.x-size : anchor.x,y:north ? anchor.y-size : anchor.y};
+          item.b = {x:item.a.x+size,y:item.a.y+size};
+        } else if (item.tool === 'text') {
           Object.assign(item,annotationClone(drag.item));
           annotationScale(item,Math.max(width/Math.max(1,b.w),height/Math.max(1,b.h)));
           const next = annotationBounds(item); item.a = {x:west ? anchor.x-next.w : anchor.x,y:north ? anchor.y-next.h : anchor.y};
@@ -2116,6 +2180,7 @@ License: bitstream-vera
       const drag = annotationState.drag; if (!drag || drag.pointerId !== event.pointerId) return;
       annotationPointerMove(event);
       const item = annotationSelected();
+      if (drag.type === 'draw' && item?.tool === 'magnifier' && annotationBounds(item).w < 4*annotationScreenUnit()) annotationInsertDefaultMagnifier(item,drag.start);
       if (drag.type === 'draw' && item && (Math.hypot(item.b.x-item.a.x,item.b.y-item.a.y) < 4*annotationScreenUnit() || (['rect','circle','patch'].includes(item.tool) && Math.min(Math.abs(item.b.x-item.a.x),Math.abs(item.b.y-item.a.y)) < 3*annotationScreenUnit()))) {
         annotationState.objects = drag.before.objects; annotationState.selected = drag.before.selected;
       } else if (JSON.stringify(drag.before.objects) !== JSON.stringify(annotationState.objects)) annotationRemember(drag.before);
@@ -2141,6 +2206,7 @@ License: bitstream-vera
     $('annotationColor').addEventListener('input',event => annotationChangeStyle('color',event.target.value));
     $('annotationWidth').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 1) annotationChangeStyle('width',Math.min(40,value)); else annotationSyncControls(); });
     $('annotationFontSize').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 8) annotationChangeStyle('fontSize',Math.min(300,value)); else annotationSyncControls(); });
+    $('annotationMagnification').addEventListener('change',event => annotationChangeStyle('magnification',annotationMagnification({magnification:event.target.value})));
     $('annotationObjectList').addEventListener('change',event => { const selected = event.target.value; annotationTextCommit(); annotationState.selected = selected || null; annotationState.tool = 'select'; annotationState.samplePicking = false; annotationSyncControls(); annotationSetTool('select'); });
     $('annotationFontFamily').addEventListener('change',event => annotationUpdateTextStyle('fontFamily',event.target.value));
     $('annotationTextModel').addEventListener('change',event => annotationUpdateTextStyle('textModel',event.target.value));
