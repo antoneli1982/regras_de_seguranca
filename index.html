@@ -2105,7 +2105,7 @@ License: bitstream-vera
       $('annotationApplyBtn').disabled = !annotationState.ready;
       $('annotationSelectionStatus').textContent = annotationState.samplePicking ? (annotationState.repairMode === 'solid' ? 'Clique na foto para capturar a cor do fundo.' : 'Clique no centro de uma área limpa da foto para usar no retoque.') : annotationState.tool === 'patch' ? (annotationState.repairMode === 'clone' && !annotationState.repairSample ? '1. Clique em uma área limpa. 2. Arraste sobre a marcação antiga.' : 'Arraste sobre a marcação antiga para cobri-la. Você pode desfazer o retoque.') : annotationState.tool === 'text' ? 'Escreva no campo Texto da marcação e clique na foto para inserir.' : item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto.');
       if (annotationState.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa: arraste para delimitar o círculo ou clique no detalhe. Depois ajuste a ampliação e aplique.';
-      else if (item?.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa selecionada · '+annotationMagnification(item).toLocaleString('pt-BR')+'×. Arraste para mover; alças ou − / + mudam o círculo. Aplicar marcações grava o resultado.';
+      else if (item?.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa selecionada · '+annotationMagnification(item).toLocaleString('pt-BR')+'×. Arraste, use as setas ou pressione Enter para posicionar e gravar a lupa. Alças ou − / + mudam o círculo.';
     }
 
     function annotationSetTool(tool) {
@@ -2357,6 +2357,22 @@ License: bitstream-vera
       else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); annotationDelete(); }
       else if (event.key === '+' || event.key === '=') { event.preventDefault(); annotationResizeSelected(1.15); }
       else if (event.key === '-') { event.preventDefault(); annotationResizeSelected(1/1.15); }
+      else if (event.key === 'Enter' && annotationState.tool === 'magnifier') {
+        // Enter finaliza a criação da lupa e deixa o objeto pronto para ser reposicionado.
+        event.preventDefault();
+        const selected = annotationSelected();
+        if (selected?.tool === 'magnifier') {
+          annotationSetTool('select');
+        } else if (!selected && annotationState.ready) {
+          const canvas = annotationState.canvas;
+          const center = {x: canvas.width / 2, y: canvas.height / 2};
+          const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'magnifier',a:center,b:center,color:annotationState.color,width:annotationState.width,magnification:annotationState.magnification};
+          annotationInsertDefaultMagnifier(item,center);
+          annotationState.objects.push(item); annotationState.selected = item.id;
+          annotationSetTool('select');
+        }
+        annotationSyncControls(); annotationRender();
+      }
       else if (event.key.startsWith('Arrow') && annotationSelected()) {
         event.preventDefault(); annotationRemember();
         const step = event.shiftKey ? 10 : 1, item = annotationSelected();
