@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2026.10.05.1" />
+  <meta name="app-version" content="2026.10.05.2" />
   <title>SESE Studio - Regras de Segurança</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1011,6 +1011,12 @@
     .annotation-help strong{display:block;color:#153c72;font-size:12px;margin-bottom:4px}
     .annotation-help p{margin:0;color:#64748b}
     .photo-annotate{position:absolute;left:7px;top:7px;z-index:6;width:30px;height:30px;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:rgba(20,101,234,.92);color:#fff;font-size:16px;line-height:28px;padding:0;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.2);opacity:.95}
+    .photo-annotate.has-marks{width:auto;max-width:calc(100% - 48px);padding:0 9px;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .annotation-object-buttons{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+    .annotation-object-buttons:empty{display:none}
+    .annotation-object-buttons button{min-height:40px;max-width:100%;white-space:normal;text-align:left;background:#fff;color:#153c72;border:1px solid #94a3b8;border-radius:8px;padding:8px 10px;font-size:12px}
+    .annotation-object-buttons button[aria-pressed="true"]{background:#1465ea;color:#fff;border-color:#1465ea}
+    #annotationSavedNotice{margin:0;padding:10px 16px;background:#ecfdf5;color:#166534;font-size:13px}
     .photo-annotate:hover{transform:none;background:#0f55ca;opacity:1}
     body.tv-mode .photo-annotate,.slide.only-correct .right-card .photo-annotate{display:none!important}
     .annotation-dialog{width:min(1120px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 24px);padding:0;border:0;border-radius:18px;background:#fff;color:#172638;box-shadow:0 28px 90px rgba(15,23,42,.45);overflow:hidden}
@@ -1316,7 +1322,7 @@ License: bitstream-vera
         <input id="rightUpload" type="file" accept="image/*" multiple>
         <div class="annotation-help">
           <strong>Marcar pontos importantes</strong>
-          <p>Depois de anexar uma foto, clique no ícone de lápis sobre ela. Desenhe e selecione formatos para mover, aumentar ou mudar a cor. Use a Lupa para ampliar uma área em um círculo e gravá-la na foto.</p>
+          <p>Depois de aplicar, clique em Editar marcações na foto. Escolha uma figura ou texto na lista para mover, redimensionar, alterar ou excluir. Os objetos permanecem separados da foto e editáveis no HTML baixado.</p>
         </div>
       </div>
 
@@ -1475,6 +1481,8 @@ License: bitstream-vera
           <button type="button" id="annotationEditTextBtn" disabled>Editar formato</button>
           <button type="button" id="annotationDeleteBtn" disabled>Excluir formato</button>
         </div>
+        <div id="annotationObjectButtons" class="annotation-object-buttons" role="group" aria-label="Escolher marcação para editar"></div>
+        <p id="annotationSavedNotice" role="status" hidden></p>
         <div id="annotationMagnifierPanel" class="annotation-options" hidden>
           <div class="annotation-toolbar" role="group" aria-label="Ajustes da lupa">
             <label for="annotationMagnification">Ampliação <select id="annotationMagnification"><option value="1.5">1,5×</option><option value="2" selected>2×</option><option value="2.5">2,5×</option><option value="3">3×</option><option value="4">4×</option><option value="6">6×</option></select></label>
@@ -1506,7 +1514,7 @@ License: bitstream-vera
   </dialog>
 
   <script>
-    const APP_VERSION = "2026.10.05.1";
+    const APP_VERSION = "2026.10.05.2";
     console.info("[SESE Studio] versão", APP_VERSION);
     const defaultLogo = "data:image/png;base64,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";
     const defaultCorrectImage = "";
@@ -1812,9 +1820,14 @@ License: bitstream-vera
         const annotate = document.createElement("button");
         annotate.type = "button";
         annotate.className = "photo-annotate";
-        annotate.textContent = "✎";
-        annotate.title = "Marcar pontos importantes nesta foto";
-        annotate.setAttribute("aria-label", "Marcar pontos importantes na foto " + (index + 1));
+        const marks = current()[side+'Annotations']?.[index]?.objects || [];
+        annotate.classList.toggle('has-marks',marks.length > 0);
+        annotate.textContent = marks.length ? '✎ Editar marcações' : '✎';
+        annotate.title = marks.length ? 'Editar as '+marks.length+' marcações desta foto' : 'Marcar pontos importantes nesta foto';
+        annotate.setAttribute("aria-label", (marks.length ? "Editar marcações da foto " : "Marcar pontos importantes na foto ") + (index + 1));
+        img.addEventListener('dblclick', () => {
+          if (!document.body.classList.contains('tv-mode')) openAnnotationEditor(side,index);
+        });
         annotate.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2115,6 +2128,24 @@ License: bitstream-vera
       $('annotationRedoBtn').disabled = !annotationState.future.length;
       $('annotationClearBtn').disabled = !annotationState.objects.length;
       $('annotationApplyBtn').disabled = !annotationState.ready;
+      const buttons = $('annotationObjectButtons');
+      const objectIds = annotationState.objects.map(object => object.id).join('|');
+      if (buttons.dataset.objectIds !== objectIds) {
+        buttons.dataset.objectIds = objectIds; buttons.replaceChildren();
+        annotationState.objects.forEach(object => {
+          const id = object.id, button = document.createElement('button'); button.type = 'button';
+          button.addEventListener('click',() => {
+            annotationTextCommit(); annotationState.selected = id;
+            annotationSyncControls(); annotationEditText();
+          });
+          buttons.appendChild(button);
+        });
+      }
+      annotationState.objects.forEach((object,index) => {
+        const button = buttons.children[index];
+        button.textContent = (index+1)+'. '+annotationNames[object.tool]+(object.tool === 'text' ? ': '+object.text.slice(0,40) : '');
+        button.setAttribute('aria-pressed',String(object.id === annotationState.selected));
+      });
       $('annotationSelectionStatus').textContent = annotationState.samplePicking ? (annotationState.repairMode === 'solid' ? 'Clique na foto para capturar a cor do fundo.' : 'Clique no centro de uma área limpa da foto para usar no retoque.') : annotationState.tool === 'patch' ? (annotationState.repairMode === 'clone' && !annotationState.repairSample ? '1. Clique em uma área limpa. 2. Arraste sobre a marcação antiga.' : 'Arraste sobre a marcação antiga para cobri-la. Você pode desfazer o retoque.') : annotationState.tool === 'text' ? 'Digite o texto e pressione Enter ou clique em Enviar texto. Depois, arraste para posicionar.' : item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto. Depois de aplicar, reabra pelo lápis para editar qualquer formato.');
       if (item?.borderVisible === false && ['arrow','line','circle','rect'].includes(item.tool)) $('annotationSelectionStatus').textContent += ' Sem cor oculta o traço. Selecione pela lista e escolha Com cor para exibi-lo novamente.';
       if (annotationState.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa: arraste para delimitar o círculo ou clique no detalhe. Depois pressione Enter para congelar o detalhe e arraste a lupa.';
@@ -2217,6 +2248,8 @@ License: bitstream-vera
       // Version 1 is also accepted for projects created previously.
       const legacyEditable = saved && saved.version === 1 && typeof saved.source === 'string' && Array.isArray(saved.objects);
       const token = ++annotationState.loadToken;
+      $('annotationSavedNotice').hidden = !(editable || legacyEditable);
+      $('annotationSavedNotice').textContent = (editable || legacyEditable) ? 'Marcações salvas e editáveis. Clique em um item da lista para alterar.' : '';
       Object.assign(annotationState,{side,index,page,source:(editable || legacyEditable) ? saved.source : src,canvas:$('annotationCanvas'),ctx:null,image:null,ready:false,selected:null,drag:null,history:[],future:[],repairSample:null,samplePicking:false,objects:(editable || legacyEditable) ? annotationClone(saved.objects) : []});
       annotationState.canvas.width = 1; annotationState.canvas.height = 1;
       annotationSetTool('select');
@@ -2229,6 +2262,7 @@ License: bitstream-vera
         annotationState.canvas.width = (editable || legacyEditable) && saved.width > 0 ? saved.width : Math.max(1,Math.round(image.naturalWidth*ratio));
         annotationState.canvas.height = (editable || legacyEditable) && saved.height > 0 ? saved.height : Math.max(1,Math.round(image.naturalHeight*ratio));
         annotationState.ctx = annotationState.canvas.getContext('2d'); annotationState.ready = true;
+        annotationState.selected = annotationState.objects.at(-1)?.id || null;
         annotationSyncControls(); annotationRender();
       };
       image.onerror = () => { if (token !== annotationState.loadToken) return; alert('Não foi possível abrir esta foto para marcação.'); closeAnnotationEditor(); };
@@ -2265,6 +2299,8 @@ License: bitstream-vera
         // O usuário pode excluir, mover ou alterar qualquer objeto sem reabrir a foto.
         annotationState.selected = annotationSelected()?.id || annotationState.objects.at(-1)?.id || null;
         annotationSyncControls(); annotationRender();
+        $('annotationSavedNotice').hidden = false;
+        $('annotationSavedNotice').textContent = 'Marcações aplicadas. Continue editando pelos itens acima ou feche e use Editar marcações na foto.';
       } catch (err) {
         console.error('Falha ao aplicar marcação:',err); annotationRender(); alert('Não foi possível salvar a marcação nesta foto.');
       }
@@ -2651,6 +2687,7 @@ License: bitstream-vera
       autoSaveProject();
     }
 
+    let localExportId = null;
     let autoSaveTimer = null;
     let projectDbPromise = null;
 
@@ -2699,15 +2736,23 @@ License: bitstream-vera
       return {
         pages,
         currentPage,
+        exportId: localExportId,
         updatedAt: new Date().toISOString()
       };
+    }
+
+    async function persistProjectSnapshot() {
+      const snapshot = projectHistoryCopy(projectSnapshot());
+      // Cada HTML exportado conserva seu próprio histórico de trabalho local.
+      if (snapshot.exportId) await idbSet('export:'+snapshot.exportId,snapshot);
+      await idbSet('main',snapshot);
     }
 
     function autoSaveProject() {
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(async () => {
         try {
-          await idbSet("main", projectSnapshot());
+          await persistProjectSnapshot();
         } catch (err) {
           console.error("Falha no autosave IndexedDB:", err);
         }
@@ -2744,10 +2789,11 @@ License: bitstream-vera
       try {
         await migrateLegacyLocalStorageToIndexedDb();
 
-        const saved = await idbGet("main");
+        const saved = await idbGet(localExportId ? 'export:'+localExportId : 'main');
         if (!saved || !Array.isArray(saved.pages) || !saved.pages.length) return false;
 
         pages = saved.pages;
+        localExportId = saved.exportId || null;
         const savedCurrent = Number.isInteger(saved.currentPage) ? saved.currentPage : 0;
         currentPage = Math.max(0, Math.min(savedCurrent, pages.length - 1));
         return true;
@@ -2759,7 +2805,7 @@ License: bitstream-vera
 
     async function saveProject() {
       try {
-        await idbSet("main", projectSnapshot());
+        await persistProjectSnapshot();
         alert("Backup salvo neste dispositivo.");
       } catch (err) {
         console.error("Falha ao salvar no IndexedDB:", err);
@@ -2769,7 +2815,7 @@ License: bitstream-vera
 
     async function loadProject() {
       try {
-        const saved = await idbGet("main");
+        const saved = await idbGet(localExportId ? 'export:'+localExportId : 'main');
         if (!saved || !Array.isArray(saved.pages) || !saved.pages.length) {
           alert("Nenhum backup encontrado neste dispositivo.");
           return;
@@ -2777,6 +2823,7 @@ License: bitstream-vera
 
         const change = projectHistoryBegin('carregar backup');
         pages = saved.pages;
+        localExportId = saved.exportId || null;
         currentPage = Math.max(0, Math.min(Number.isInteger(saved.currentPage) ? saved.currentPage : 0, pages.length - 1));
         projectHistoryCommit(change);
         syncFormFromPage();
@@ -2789,7 +2836,23 @@ License: bitstream-vera
     }
 
     async function initializeLocalProject() {
-      await restoreAutoSavedProject();
+      let imported = false;
+      try {
+        const element = document.getElementById('seseEmbeddedProject');
+        const embedded = element ? JSON.parse(element.textContent) : null;
+        if (embedded && Array.isArray(embedded.pages) && embedded.pages.length) {
+          // Reabrir a mesma exportação deve manter as edições locais mais recentes.
+          localExportId = embedded.exportId || null;
+          const saved = await idbGet(localExportId ? 'export:'+localExportId : 'main').catch(() => null);
+          if (!saved || saved.exportId !== embedded.exportId) {
+            pages = embedded.pages;
+            currentPage = Math.max(0,Math.min(Number.isInteger(embedded.currentPage) ? embedded.currentPage : 0,pages.length-1));
+            localExportId = embedded.exportId || null;
+            imported = true;
+          }
+        }
+      } catch (error) { console.warn('Não foi possível restaurar o projeto incorporado:',error); }
+      if (!imported) await restoreAutoSavedProject();
       syncFormFromPage();
       autoSaveProject();
     }
@@ -3040,7 +3103,14 @@ License: bitstream-vera
     });
 
     function downloadHTML() {
-      const blob = new Blob([document.documentElement.outerHTML], {type:"text/html;charset=utf-8"});
+      const root = document.documentElement.cloneNode(true);
+      root.querySelector('#seseEmbeddedProject')?.remove();
+      const data = document.createElement('script');
+      data.id = 'seseEmbeddedProject'; data.type = 'application/json';
+      data.textContent = JSON.stringify({...projectSnapshot(),exportId:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}).replace(/</g,'\\u003c');
+      root.querySelector('head').appendChild(data);
+      root.querySelectorAll('dialog[open]').forEach(dialog => dialog.removeAttribute('open'));
+      const blob = new Blob(['<!DOCTYPE html>\n'+root.outerHTML], {type:"text/html;charset=utf-8"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
