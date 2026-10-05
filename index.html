@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2026.10.01.6" />
+  <meta name="app-version" content="2026.10.05.1" />
   <title>SESE Studio - Regras de Segurança</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1135,6 +1135,7 @@
     .annotation-toolbar input[type="number"]{width:65px;min-height:38px;padding:5px 7px;background:white;color:#172638;border:1px solid #94a3b8;border-radius:8px;font-size:14px}
     .annotation-toolbar input[type="color"]{width:40px;height:40px}
     .annotation-properties{background:#fff}
+    #annotationSubmitTextBtn{justify-self:start;min-height:44px;padding:10px 16px;font-size:14px;background:#1465ea;color:#fff;border:0;border-radius:9px}
     .annotation-palette{display:flex;flex-wrap:wrap;gap:6px;padding-right:10px;border-right:1px solid #e2e8f0}
     .annotation-group-label{flex-basis:100%;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#475569}
     .annotation-toolbar .annotation-swatch{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 8px;color:#334155}
@@ -1464,13 +1465,14 @@ License: bitstream-vera
             <button type="button" class="annotation-swatch" data-annotation-color="#000000" aria-label="Preto" title="Preto" aria-pressed="false"><span style="--swatch:#000000" aria-hidden="true"></span></button>
             <label>Outra cor <input id="annotationColor" type="color" value="#ff0000" aria-label="Escolher outra cor"></label>
           </div>
+          <label>Borda <select id="annotationBorder" aria-label="Borda do formato"><option value="color">Com cor</option><option value="none">Sem cor</option></select></label>
           <label>Espessura <input id="annotationWidth" type="number" min="1" max="40" step="1" value="6" aria-label="Espessura do traço em pixels"> px</label>
           <label>Texto <input id="annotationFontSize" type="number" min="8" max="300" step="1" value="36" aria-label="Tamanho do texto em pixels"> px</label>
         </div>
         <div class="annotation-toolbar annotation-selection" role="group" aria-label="Editar formato selecionado">
           <select id="annotationObjectList" aria-label="Selecionar formato para editar" disabled><option value="">Selecionar formato…</option></select>
           <span class="annotation-size-controls"><span>Tamanho</span><button type="button" id="annotationSmallerBtn" aria-label="Diminuir formato" title="Diminuir formato" disabled>−</button><button type="button" id="annotationLargerBtn" aria-label="Aumentar formato" title="Aumentar formato" disabled>+</button></span>
-          <button type="button" id="annotationEditTextBtn" disabled>Editar texto</button>
+          <button type="button" id="annotationEditTextBtn" disabled>Editar formato</button>
           <button type="button" id="annotationDeleteBtn" disabled>Excluir formato</button>
         </div>
         <div id="annotationMagnifierPanel" class="annotation-options" hidden>
@@ -1485,7 +1487,7 @@ License: bitstream-vera
             <label>Modelo <select id="annotationTextModel" aria-label="Modelo do texto"><option value="plain">Simples</option><option value="outline">Contorno branco</option><option value="shadow">Sombra</option><option value="label">Faixa escura</option><option value="warning">Destaque amarelo</option></select></label>
             <div class="annotation-format-buttons" role="group" aria-label="Estilo da fonte"><button type="button" id="annotationBoldBtn" aria-label="Negrito" aria-pressed="true"><b>N</b></button><button type="button" id="annotationItalicBtn" aria-label="Itálico" aria-pressed="false"><i>I</i></button><button type="button" id="annotationUnderlineBtn" aria-label="Sublinhado" aria-pressed="false"><u>S</u></button></div>
           </div>
-          <div class="annotation-text-entry"><label for="annotationTextValue">Texto da marcação</label><textarea id="annotationTextValue" rows="2" placeholder="Digite o texto. Depois, clique na foto para posicionar." maxlength="1000"></textarea><small id="annotationTextHint">Escreva e clique na foto para inserir. Enter permite escrever em mais de uma linha.</small></div>
+          <div class="annotation-text-entry"><label for="annotationTextValue">Texto da marcação</label><textarea id="annotationTextValue" rows="2" placeholder="Digite e pressione Enter para inserir. Shift+Enter cria outra linha." maxlength="1000"></textarea><button type="button" id="annotationSubmitTextBtn">↵ Enviar texto</button><small id="annotationTextHint">Enter envia o texto. Shift+Enter cria outra linha. Depois, arraste para posicionar.</small></div>
         </div>
         <div id="annotationRepairPanel" class="annotation-options" hidden>
           <div class="annotation-toolbar" role="group" aria-label="Remover marcações antigas">
@@ -1504,7 +1506,7 @@ License: bitstream-vera
   </dialog>
 
   <script>
-    const APP_VERSION = "2026.10.01.6";
+    const APP_VERSION = "2026.10.05.1";
     console.info("[SESE Studio] versão", APP_VERSION);
     const defaultLogo = "data:image/png;base64,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";
     const defaultCorrectImage = "";
@@ -1829,7 +1831,7 @@ License: bitstream-vera
     // A foto original e os objetos ficam separados; a galeria recebe uma prévia renderizada.
     const annotationState = {
       side: null, index: -1, page: null, source: '', image: null, canvas: null, ctx: null,
-      tool: 'select', color: '#ff0000', width: 6, fontSize: 36, magnification: 2,
+      tool: 'select', color: '#ff0000', width: 6, borderVisible: true, fontSize: 36, magnification: 2,
       fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline',textDraft:'',
       repairMode:'clone',repairSample:null,repairColor:'#ffffff',samplePicking:false,
       objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0
@@ -1865,7 +1867,7 @@ License: bitstream-vera
         const x = s.a.x+m.pad, y = s.a.y+m.pad+index*m.lineHeight;
         ctx.save();
         if (s.textModel === 'shadow') { ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = s.fontSize*0.12; ctx.shadowOffsetX = s.fontSize*0.06; ctx.shadowOffsetY = s.fontSize*0.06; }
-        if (s.textModel === 'outline') { ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2,s.width/2); ctx.strokeText(line,x,y); }
+        if (s.textModel === 'outline' && s.borderVisible !== false) { ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2,s.width/2); ctx.strokeText(line,x,y); }
         ctx.fillText(line,x,y);
         if (s.underline) { ctx.strokeStyle = s.color; ctx.lineWidth = Math.max(1,s.fontSize/18); ctx.beginPath(); ctx.moveTo(x,y+s.fontSize); ctx.lineTo(x+m.widths[index],y+s.fontSize); ctx.stroke(); }
         ctx.restore();
@@ -1929,7 +1931,7 @@ License: bitstream-vera
     const annotationFontsReady = Promise.all(['Poppins','Montserrat','SESE Sans','SESE Serif','SESE Mono'].map(family => document.fonts.load('16px "'+family+'"'))).catch(error => console.warn('Fonte indisponível:',error));
 
     function annotationPoint(event) {
-      const canvas = annotationState.canvas, rect = canvas.getBoundingClientRect();
+      const canvas = annotationState.canvas, rect = annotationState.drag?.canvasRect || canvas.getBoundingClientRect();
       return {
         x: Math.max(0, Math.min(canvas.width, (event.clientX - rect.left) * canvas.width / rect.width)),
         y: Math.max(0, Math.min(canvas.height, (event.clientY - rect.top) * canvas.height / rect.height))
@@ -1964,7 +1966,7 @@ License: bitstream-vera
       ctx.drawImage(image,0,0,canvas.width,canvas.height);
       objects.filter(object => object.tool === 'patch').forEach(object => annotationDrawPatch(ctx,object));
       ctx.restore();
-      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
+      if (item.borderVisible !== false) { ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke(); }
     }
     function annotationOrderedObjects() {
       const objects = annotationState.objects;
@@ -1999,6 +2001,8 @@ License: bitstream-vera
         annotationDrawPatch(ctx,item);
       } else if (tool === 'magnifier') {
         annotationDrawMagnifier(ctx,item);
+      } else if (item.borderVisible === false) {
+        // Sem borda: o objeto continua disponível na lista e nas alças de edição.
       } else if (tool === 'rect') {
         ctx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
       } else if (tool === 'circle') {
@@ -2067,6 +2071,7 @@ License: bitstream-vera
       const item = annotationSelected();
       if (item) {
         annotationState.color = item.color; annotationState.width = item.width;
+        annotationState.borderVisible = item.borderVisible !== false;
         if (item.tool === 'text') {
           annotationState.fontSize = item.fontSize;
           const style = annotationTextStyle(item);
@@ -2077,6 +2082,7 @@ License: bitstream-vera
       }
       $('annotationColor').value = annotationState.color;
       $('annotationWidth').value = annotationState.width;
+      $('annotationBorder').value = annotationState.borderVisible ? 'color' : 'none';
       $('annotationFontSize').value = Math.round(annotationState.fontSize);
       $('annotationMagnifierPanel').hidden = !(item?.tool === 'magnifier' || annotationState.tool === 'magnifier');
       $('annotationMagnification').value = String(annotationState.magnification);
@@ -2088,7 +2094,9 @@ License: bitstream-vera
       $('annotationTextModel').value = annotationState.textModel;
       [['annotationBoldBtn','bold'],['annotationItalicBtn','italic'],['annotationUnderlineBtn','underline']].forEach(([id,key])=>$(id).setAttribute('aria-pressed',String(annotationState[key])));
       if (document.activeElement !== $('annotationTextValue')) $('annotationTextValue').value = isText ? item.text : annotationState.textDraft;
-      $('annotationTextHint').textContent = isText ? 'Altere o texto e clique fora do campo para atualizar. Enter permite mais de uma linha.' : 'Escreva e clique na foto para inserir. Enter permite mais de uma linha.';
+      $('annotationSubmitTextBtn').textContent = isText ? '↵ Atualizar texto' : '↵ Enviar texto';
+      $('annotationSubmitTextBtn').disabled = !annotationState.ready;
+      $('annotationTextHint').textContent = isText ? 'Enter atualiza este texto. Shift+Enter cria outra linha. Arraste o texto para mover.' : 'Enter insere o texto no centro da foto. Shift+Enter cria outra linha. Você também pode clicar na foto para posicionar.';
       $('annotationRepairMode').value = annotationState.repairMode;
       $('annotationRepairColor').value = annotationState.repairColor;
       $('annotationRepairColorLabel').hidden = annotationState.repairMode !== 'solid';
@@ -2100,13 +2108,15 @@ License: bitstream-vera
       list.value = item ? item.id : '';
       list.disabled = !annotationState.objects.length;
       ['annotationSmallerBtn','annotationLargerBtn','annotationDeleteBtn'].forEach(id => $(id).disabled = !item);
-      $('annotationEditTextBtn').disabled = !item || item.tool !== 'text';
+      $('annotationEditTextBtn').disabled = !item;
+      $('annotationEditTextBtn').textContent = isText ? 'Editar texto' : 'Editar formato';
       $('annotationFontSize').disabled = !!item && item.tool !== 'text';
       $('annotationUndoBtn').disabled = !annotationState.history.length;
       $('annotationRedoBtn').disabled = !annotationState.future.length;
       $('annotationClearBtn').disabled = !annotationState.objects.length;
       $('annotationApplyBtn').disabled = !annotationState.ready;
-      $('annotationSelectionStatus').textContent = annotationState.samplePicking ? (annotationState.repairMode === 'solid' ? 'Clique na foto para capturar a cor do fundo.' : 'Clique no centro de uma área limpa da foto para usar no retoque.') : annotationState.tool === 'patch' ? (annotationState.repairMode === 'clone' && !annotationState.repairSample ? '1. Clique em uma área limpa. 2. Arraste sobre a marcação antiga.' : 'Arraste sobre a marcação antiga para cobri-la. Você pode desfazer o retoque.') : annotationState.tool === 'text' ? 'Escreva no campo Texto da marcação e clique na foto para inserir.' : item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto. Depois de aplicar, reabra pelo lápis para editar qualquer formato.');
+      $('annotationSelectionStatus').textContent = annotationState.samplePicking ? (annotationState.repairMode === 'solid' ? 'Clique na foto para capturar a cor do fundo.' : 'Clique no centro de uma área limpa da foto para usar no retoque.') : annotationState.tool === 'patch' ? (annotationState.repairMode === 'clone' && !annotationState.repairSample ? '1. Clique em uma área limpa. 2. Arraste sobre a marcação antiga.' : 'Arraste sobre a marcação antiga para cobri-la. Você pode desfazer o retoque.') : annotationState.tool === 'text' ? 'Digite o texto e pressione Enter ou clique em Enviar texto. Depois, arraste para posicionar.' : item ? annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho.' : (annotationState.objects.length ? 'Selecione um formato na foto ou na lista para editar.' : 'Escolha uma ferramenta e desenhe sobre a foto. Depois de aplicar, reabra pelo lápis para editar qualquer formato.');
+      if (item?.borderVisible === false && ['arrow','line','circle','rect'].includes(item.tool)) $('annotationSelectionStatus').textContent += ' Sem cor oculta o traço. Selecione pela lista e escolha Com cor para exibi-lo novamente.';
       if (annotationState.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa: arraste para delimitar o círculo ou clique no detalhe. Depois pressione Enter para congelar o detalhe e arraste a lupa.';
       else if (item?.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa selecionada · '+annotationMagnification(item).toLocaleString('pt-BR')+'×. Pressione Enter para capturar este ponto; depois arraste a lupa para qualquer local sem alterar a imagem capturada.';
     }
@@ -2166,8 +2176,38 @@ License: bitstream-vera
       annotationState.selected = null; annotationSyncControls(); annotationRender();
     }
     function annotationEditText() {
-      const item = annotationSelected(); if (!item || item.tool !== 'text') return;
-      $('annotationTextValue').focus(); $('annotationTextValue').select();
+      const item = annotationSelected(); if (!item) return;
+      annotationSetTool('select');
+      if (item.tool === 'text') {
+        $('annotationTextValue').focus(); $('annotationTextValue').select();
+      } else {
+        annotationState.canvas.focus({preventScroll:true});
+        annotationState.canvas.scrollIntoView({block:'nearest'});
+      }
+    }
+    function annotationInsertText(point) {
+      const value = $('annotationTextValue').value.trim();
+      if (!annotationState.ready || !value) { $('annotationTextValue').focus(); return; }
+      annotationRemember();
+      const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'text',a:point || {x:0,y:0},color:annotationState.color,width:annotationState.width,borderVisible:annotationState.borderVisible,fontSize:annotationState.fontSize,fontFamily:annotationState.fontFamily,bold:annotationState.bold,italic:annotationState.italic,underline:annotationState.underline,textModel:annotationState.textModel,text:value};
+      annotationState.objects.push(item); annotationState.selected = item.id;
+      annotationScale(item,1);
+      if (!point) {
+        const box = annotationBounds(item);
+        item.a = {x:(annotationState.canvas.width-box.w)/2,y:(annotationState.canvas.height-box.h)/2};
+        annotationKeepInside(item);
+      }
+      $('annotationTextValue').value = value;
+      annotationState.textDraft = '';
+      annotationSetTool('select');
+    }
+    function annotationSubmitText() {
+      if (!annotationState.ready || annotationState.drag) return;
+      if (!$('annotationTextValue').value.trim()) { $('annotationTextValue').focus(); return; }
+      if (annotationSelected()?.tool === 'text') annotationTextCommit();
+      else annotationInsertText();
+      annotationState.canvas.focus({preventScroll:true});
+      annotationState.canvas.scrollIntoView({block:'nearest'});
     }
 
     function openAnnotationEditor(side,index) {
@@ -2223,7 +2263,7 @@ License: bitstream-vera
         if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
         // Aplicar salva a prévia, mas mantém o editor aberto para edição imediata.
         // O usuário pode excluir, mover ou alterar qualquer objeto sem reabrir a foto.
-        annotationState.selected = annotationState.objects.at(-1)?.id || annotationState.selected;
+        annotationState.selected = annotationSelected()?.id || annotationState.objects.at(-1)?.id || null;
         annotationSyncControls(); annotationRender();
       } catch (err) {
         console.error('Falha ao aplicar marcação:',err); annotationRender(); alert('Não foi possível salvar a marcação nesta foto.');
@@ -2250,27 +2290,28 @@ License: bitstream-vera
       if (annotationState.tool === 'select') {
         let item = annotationSelected();
         const handle = item && annotationHandles(item).find(p => Math.hypot(point.x-p.x,point.y-p.y) <= 14*annotationScreenUnit());
-        if (!handle) {
+        if (!handle && !(item && annotationHit(point,item))) {
           const ordered = annotationOrderedObjects();
           item = ordered.reverse().find(object => annotationHit(point,object));
         }
         annotationState.selected = item ? item.id : null;
         if (item) annotationState.drag = {type:handle ? 'resize' : 'move',handle:handle?.key,start:point,item:annotationClone(item),before,pointerId:event.pointerId};
       } else if (annotationState.tool === 'text') {
-        const value = $('annotationTextValue').value;
-        if (!value.trim()) { $('annotationTextValue').focus(); return; }
-        annotationRemember(before);
-        const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'text',a:point,color:annotationState.color,width:annotationState.width,fontSize:annotationState.fontSize,fontFamily:annotationState.fontFamily,bold:annotationState.bold,italic:annotationState.italic,underline:annotationState.underline,textModel:annotationState.textModel,text:value.trim()};
-        annotationState.objects.push(item); annotationState.selected = item.id; annotationScale(item,1); annotationSetTool('select');
+        annotationInsertText(point);
       } else {
-        const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:annotationState.tool,a:point,b:{...point},color:annotationState.color,width:annotationState.width};
+        const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:annotationState.tool,a:point,b:{...point},color:annotationState.color,width:annotationState.width,borderVisible:annotationState.borderVisible};
         if (item.tool === 'patch') { item.repairMode = annotationState.repairMode; item.sample = annotationState.repairSample ? {...annotationState.repairSample} : null; item.color = annotationState.repairColor; }
         if (item.tool === 'magnifier') item.magnification = annotationState.magnification;
         annotationState.objects.push(item); annotationState.selected = item.id;
         annotationState.drag = {type:'draw',start:point,before,pointerId:event.pointerId};
       }
-      if (annotationState.drag) annotationState.canvas.setPointerCapture?.(event.pointerId);
-      annotationSyncControls(); annotationRender();
+      if (annotationState.drag) {
+        const rect = annotationState.canvas.getBoundingClientRect();
+        annotationState.drag.canvasRect = {left:rect.left,top:rect.top,width:rect.width,height:rect.height};
+        annotationState.canvas.setPointerCapture?.(event.pointerId);
+        // Não altera os painéis durante o gesto: isso deslocaria a foto sob o ponteiro.
+        annotationRender();
+      } else { annotationSyncControls(); annotationRender(); }
     }
     function annotationPointerMove(event) {
       const drag = annotationState.drag;
@@ -2311,6 +2352,7 @@ License: bitstream-vera
       } else if (JSON.stringify(drag.before.objects) !== JSON.stringify(annotationState.objects)) annotationRemember(drag.before);
       annotationState.drag = null;
       if (annotationState.canvas.hasPointerCapture?.(event.pointerId)) annotationState.canvas.releasePointerCapture(event.pointerId);
+      annotationSyncControls();
       annotationSetTool('select');
     }
     function annotationPointerCancel(event) {
@@ -2325,7 +2367,11 @@ License: bitstream-vera
     $('annotationCanvas').addEventListener('pointerup',annotationPointerUp);
     $('annotationCanvas').addEventListener('pointercancel',annotationPointerCancel);
     $('annotationCanvas').addEventListener('lostpointercapture',annotationPointerCancel);
-    $('annotationCanvas').addEventListener('dblclick',annotationEditText);
+    $('annotationCanvas').addEventListener('dblclick',event => {
+      if (!annotationState.ready || annotationState.tool !== 'select') return;
+      const item = annotationOrderedObjects().reverse().find(object => annotationHit(annotationPoint(event),object));
+      if (item) { annotationState.selected = item.id; annotationSyncControls(); annotationEditText(); }
+    });
     document.querySelectorAll('[data-annotation-tool]').forEach(button => button.addEventListener('click',() => annotationSetTool(button.dataset.annotationTool)));
     document.querySelectorAll('[data-annotation-color]').forEach(button => button.addEventListener('click',() => annotationChangeStyle('color',button.dataset.annotationColor)));
     $('annotationColor').addEventListener('input',event => annotationChangeStyle('color',event.target.value));
@@ -2338,6 +2384,13 @@ License: bitstream-vera
     [['annotationBoldBtn','bold'],['annotationItalicBtn','italic'],['annotationUnderlineBtn','underline']].forEach(([id,key])=>$(id).addEventListener('click',()=>annotationUpdateTextStyle(key,!annotationState[key])));
     $('annotationTextValue').addEventListener('input',()=>{if(annotationSelected()?.tool !== 'text') annotationState.textDraft = $('annotationTextValue').value;});
     $('annotationTextValue').addEventListener('change',annotationTextCommit);
+    $('annotationTextValue').addEventListener('keydown',event => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault(); event.stopPropagation(); annotationSubmitText();
+      }
+    });
+    $('annotationSubmitTextBtn').addEventListener('click',annotationSubmitText);
+    $('annotationBorder').addEventListener('change',event => annotationChangeStyle('borderVisible',event.target.value !== 'none'));
     $('annotationRepairMode').addEventListener('change',event=>annotationUpdateRepairMode(event.target.value));
     $('annotationRepairColor').addEventListener('input',event=>{
       annotationState.repairColor = event.target.value;
@@ -2379,7 +2432,7 @@ License: bitstream-vera
         } else if (!selected && annotationState.ready) {
           const canvas = annotationState.canvas;
           const center = {x: canvas.width / 2, y: canvas.height / 2};
-          const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'magnifier',a:center,b:center,color:annotationState.color,width:annotationState.width,magnification:annotationState.magnification};
+          const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'magnifier',a:center,b:center,color:annotationState.color,width:annotationState.width,borderVisible:annotationState.borderVisible,magnification:annotationState.magnification};
           annotationInsertDefaultMagnifier(item,center);
           annotationState.objects.push(item); annotationState.selected = item.id;
           annotationSetTool('select');
