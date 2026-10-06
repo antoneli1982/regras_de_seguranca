@@ -44,11 +44,14 @@
       model.pages[page.id] = item;
       model.order.push(page.id);
     });
+    model.checklist = {};
+    checklistState.tasks.forEach(task => { model.checklist[task.id] = copy(task); });
     return model;
   }
   function normalize(model) {
     if (!model || model.schemaVersion !== 2 || !model.pages) throw new Error('Formato de projeto inválido.');
     const result = copy(model);
+    result.checklist ||= {};
     result.order = (result.order || []).filter(id => result.pages[id]);
     Object.keys(result.pages).forEach(id => {
       if (!result.order.includes(id)) result.order.push(id);
@@ -60,8 +63,16 @@
   }
   function merge(model, patch) {
     const result = copy(model);
+    result.checklist ||= {};
     Object.entries(patch).forEach(([path, value]) => {
       if (path === 'order') return;
+      if (path.startsWith('checklist/')) {
+        const [, taskId, taskField] = path.split('/');
+        if (taskField) { if (result.checklist[taskId]) result.checklist[taskId][taskField] = copy(value); }
+        else if (value === null) delete result.checklist[taskId];
+        else result.checklist[taskId] = copy(value);
+        return;
+      }
       const [, id, field] = path.split('/');
       if (field) {
         // An edit from an old tab must not resurrect a deleted page.
@@ -80,6 +91,9 @@
     pages = model.order.map(id => ({ ...copy(model.pages[id]), id }));
     const samePage = pages.findIndex(p => p.id === selected);
     currentPage = samePage >= 0 ? samePage : Math.min(currentPage, pages.length - 1);
+    checklistState = {id: checklistSeed.id, tasks: Object.values(copy(model.checklist || {}))};
+    renderChecklist();
+    document.getElementById('checkSaveStatus').textContent = 'Checklist compartilhado entre navegadores.';
     syncFormFromPage();
     view = pack();
     idbSet('cloud-cache', projectSnapshot()).catch(console.warn);
@@ -96,6 +110,16 @@
         if (!equal(page[key], view.pages[id][key])) {
           if (pending['pages/' + id]) pending['pages/' + id][key] = page[key];
           else pending['pages/' + id + '/' + key] = page[key];
+        }
+      });
+    });
+    Object.keys(view.checklist).forEach(id => { if (!next.checklist[id]) pending['checklist/' + id] = null; });
+    Object.entries(next.checklist).forEach(([id, task]) => {
+      if (!view.checklist[id]) pending['checklist/' + id] = task;
+      else ['title', 'note', 'done'].forEach(key => {
+        if (!equal(task[key] ?? null, view.checklist[id][key] ?? null)) {
+          if (pending['checklist/' + id]) pending['checklist/' + id][key] = task[key] ?? '';
+          else pending['checklist/' + id + '/' + key] = task[key] ?? '';
         }
       });
     });
@@ -156,6 +180,12 @@
         if (JSON.stringify(seed).length > 12000000) throw new Error('Backup grande demais para carregar.');
         const result = await ref.transaction(existing => existing === null ? seed : undefined, undefined, false);
         remote = result.snapshot.val();
+      }
+      if (!remote.checklist) {
+        // Migrate this browser only once; an existing shared checklist always wins.
+        const seedTasks = pack().checklist;
+        await ref.child('checklist').transaction(existing => existing === null ? seedTasks : undefined, undefined, false);
+        remote = (await ref.once('value')).val();
       }
       latest = normalize(remote);
       display(latest);
