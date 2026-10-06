@@ -1215,7 +1215,7 @@
     .annotation-options p{margin:0;padding:3px 16px 12px;color:#64748b;font-size:12px;line-height:1.5}
     .annotation-font-size button{font-size:15px!important;font-weight:800}
     .annotation-format-buttons{display:flex;gap:5px}
-    .annotation-format-buttons button{width:40px;font-size:16px}
+    .annotation-format-buttons button{width:40px;font-size:16px;display:inline-flex;align-items:center;justify-content:center}
     .annotation-format-buttons button[aria-pressed="true"]{background:#1465ea;color:#fff;border-color:#1465ea}
     .annotation-text-entry{padding:2px 16px 12px}
     .annotation-text-entry label{color:#475569;font-size:12px;margin:0 0 5px}
@@ -1552,6 +1552,8 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
             <label>Modelo <select id="annotationTextModel" aria-label="Modelo do texto"><option value="plain">Simples</option><option value="outline">Contorno branco</option><option value="shadow">Sombra</option><option value="label">Faixa escura</option><option value="warning">Destaque amarelo</option></select></label>
             <span class="annotation-size-controls annotation-font-size" role="group" aria-label="Tamanho do texto"><span>Tamanho</span><button type="button" id="annotationFontSmallerBtn" aria-label="Diminuir tamanho do texto" title="Diminuir tamanho do texto">A−</button><input id="annotationFontSize" type="number" min="8" max="300" step="1" value="36" aria-label="Tamanho do texto em pixels"><span>px</span><button type="button" id="annotationFontLargerBtn" aria-label="Aumentar tamanho do texto" title="Aumentar tamanho do texto">A+</button></span>
             <div class="annotation-format-buttons" role="group" aria-label="Estilo da fonte"><button type="button" id="annotationBoldBtn" aria-label="Negrito" aria-pressed="true"><b>N</b></button><button type="button" id="annotationItalicBtn" aria-label="Itálico" aria-pressed="false"><i>I</i></button><button type="button" id="annotationUnderlineBtn" aria-label="Sublinhado" aria-pressed="false"><u>S</u></button></div>
+            <div class="annotation-format-buttons" role="group" aria-label="Alinhamento do texto"><button type="button" id="annotationAlignLeftBtn" data-annotation-align="left" aria-label="Alinhar à esquerda" title="Alinhar à esquerda" aria-pressed="true"><svg viewBox="0 0 16 14" width="16" height="14" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="16" height="2" rx="1"/><rect x="0" y="4" width="10" height="2" rx="1"/><rect x="0" y="8" width="16" height="2" rx="1"/><rect x="0" y="12" width="8" height="2" rx="1"/></svg></button><button type="button" id="annotationAlignCenterBtn" data-annotation-align="center" aria-label="Centralizar as linhas" title="Centralizar as linhas" aria-pressed="false"><svg viewBox="0 0 16 14" width="16" height="14" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="16" height="2" rx="1"/><rect x="3" y="4" width="10" height="2" rx="1"/><rect x="0" y="8" width="16" height="2" rx="1"/><rect x="4" y="12" width="8" height="2" rx="1"/></svg></button><button type="button" id="annotationAlignRightBtn" data-annotation-align="right" aria-label="Alinhar à direita" title="Alinhar à direita" aria-pressed="false"><svg viewBox="0 0 16 14" width="16" height="14" aria-hidden="true" fill="currentColor"><rect x="0" y="0" width="16" height="2" rx="1"/><rect x="6" y="4" width="10" height="2" rx="1"/><rect x="0" y="8" width="16" height="2" rx="1"/><rect x="8" y="12" width="8" height="2" rx="1"/></svg></button></div>
+            <button type="button" id="annotationCenterOnPhotoBtn" title="Colocar o texto no centro da foto" disabled>Centralizar na foto</button>
           </div>
           <div class="annotation-text-entry"><label for="annotationTextValue">Texto da marcação</label><textarea id="annotationTextValue" rows="2" placeholder="Digite e pressione Enter para inserir. O texto quebra a linha sozinho para caber na foto." maxlength="1000"></textarea><button type="button" id="annotationSubmitTextBtn">↵ Enviar texto</button><small id="annotationTextHint">Enter envia o texto. A linha quebra sozinha para caber na foto. Depois, arraste para posicionar.</small></div>
         </div>
@@ -2024,7 +2026,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     const annotationState = {
       side: null, index: -1, page: null, source: '', image: null, canvas: null, ctx: null,
       tool: 'select', color: '#ff0000', width: 6, borderVisible: true, fontSize: 36, magnification: 2,
-      fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline',textDraft:'',
+      fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline',textAlign:'left',textDraft:'',
       repairMode:'clone',repairSample:null,repairColor:'#ffffff',samplePicking:false,
       objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0,
       viewZoom: 1, viewX: 0, viewY: 0, viewPan: false, viewDrag: null
@@ -2034,7 +2036,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     const annotationSelected = () => annotationState.objects.find(item => item.id === annotationState.selected);
     const annotationScreenUnit = () => annotationState.canvas.width / Math.max(1, annotationState.canvas.getBoundingClientRect().width);
 
-    const annotationTextDefaults = {fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline'};
+    const annotationTextDefaults = {fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline',textAlign:'left'};
     const annotationFontFamilies = ['Poppins','Montserrat','SESE Sans','SESE Serif','SESE Mono','Arial'];
     function annotationTextStyle(item) { return {...annotationTextDefaults,...item}; }
     function annotationFont(item) {
@@ -2083,7 +2085,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
         ctx.fillRect(s.a.x,s.a.y,m.w,m.h); ctx.fillStyle = s.color;
       }
       m.lines.forEach((line,index) => {
-        const x = s.a.x+m.pad, y = s.a.y+m.pad+index*m.lineHeight;
+        const free = m.w-m.pad*2-m.widths[index], x = s.a.x+m.pad+free*({center:0.5,right:1}[s.textAlign] || 0), y = s.a.y+m.pad+index*m.lineHeight;
         ctx.save();
         if (s.textModel === 'shadow') { ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = s.fontSize*0.12; ctx.shadowOffsetX = s.fontSize*0.06; ctx.shadowOffsetY = s.fontSize*0.06; }
         if (s.textModel === 'outline' && s.borderVisible !== false) { ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2,s.width/2); ctx.strokeText(line,x,y); }
@@ -2120,6 +2122,13 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       annotationState[key] = value;
       if (modelColor) annotationState.color = modelColor;
       annotationSyncControls(); annotationRender();
+    }
+    function annotationCenterOnPhoto() {
+      const item = annotationSelected(); if (item?.tool !== 'text') return;
+      const box = annotationBounds(item), canvas = annotationState.canvas;
+      annotationRemember();
+      item.a = {x:(canvas.width-box.w)/2,y:(canvas.height-box.h)/2};
+      annotationKeepInside(item); annotationSyncControls(); annotationRender();
     }
     function annotationUpdateRepairMode(mode) {
       const item = annotationSelected();
@@ -2355,6 +2364,9 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       $('annotationFontFamily').value = annotationState.fontFamily;
       $('annotationTextModel').value = annotationState.textModel;
       [['annotationBoldBtn','bold'],['annotationItalicBtn','italic'],['annotationUnderlineBtn','underline']].forEach(([id,key])=>$(id).setAttribute('aria-pressed',String(annotationState[key])));
+      document.querySelectorAll('[data-annotation-align]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.annotationAlign === annotationState.textAlign)));
+      $('annotationCenterOnPhotoBtn').disabled = !isText;
+      $('annotationTextValue').style.textAlign = annotationState.textAlign;
       if (document.activeElement !== $('annotationTextValue')) $('annotationTextValue').value = isText ? item.text : annotationState.textDraft;
       $('annotationSubmitTextBtn').textContent = isText ? '↵ Atualizar texto' : '↵ Enviar texto';
       $('annotationSubmitTextBtn').disabled = !annotationState.ready;
@@ -2476,7 +2488,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       const value = $('annotationTextValue').value.trim();
       if (!annotationState.ready || !value) { $('annotationTextValue').focus(); return; }
       annotationRemember();
-      const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'text',a:point || {x:0,y:0},color:annotationState.color,width:annotationState.width,borderVisible:annotationState.borderVisible,fontSize:annotationState.fontSize,fontFamily:annotationState.fontFamily,bold:annotationState.bold,italic:annotationState.italic,underline:annotationState.underline,textModel:annotationState.textModel,text:value};
+      const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'text',a:point || {x:0,y:0},color:annotationState.color,width:annotationState.width,borderVisible:annotationState.borderVisible,fontSize:annotationState.fontSize,fontFamily:annotationState.fontFamily,bold:annotationState.bold,italic:annotationState.italic,underline:annotationState.underline,textModel:annotationState.textModel,textAlign:annotationState.textAlign,text:value};
       annotationState.objects.push(item); annotationState.selected = item.id;
       annotationScale(item,1);
       if (!point) {
@@ -2688,6 +2700,8 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     $('annotationWidth').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 1) annotationChangeStyle('width',Math.min(40,value)); else annotationSyncControls(); });
     $('annotationFontSize').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 8) annotationChangeStyle('fontSize',Math.min(300,value)); else annotationSyncControls(); });
     const annotationStepFontSize = delta => annotationChangeStyle('fontSize',Math.max(8,Math.min(300,Math.round(annotationState.fontSize)+delta)));
+    document.querySelectorAll('[data-annotation-align]').forEach(button => button.addEventListener('click',() => annotationUpdateTextStyle('textAlign',button.dataset.annotationAlign)));
+    $('annotationCenterOnPhotoBtn').addEventListener('click',annotationCenterOnPhoto);
     $('annotationFontSmallerBtn').addEventListener('click',() => annotationStepFontSize(-4));
     $('annotationFontLargerBtn').addEventListener('click',() => annotationStepFontSize(4));
     $('annotationMagnification').addEventListener('change',event => annotationChangeStyle('magnification',annotationMagnification({magnification:event.target.value})));
