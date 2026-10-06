@@ -1213,6 +1213,7 @@
     .annotation-options select{max-width:100%;height:40px;font-size:13px}
     .annotation-options label{min-width:0;flex-wrap:wrap}
     .annotation-options p{margin:0;padding:3px 16px 12px;color:#64748b;font-size:12px;line-height:1.5}
+    .annotation-font-size button{font-size:15px!important;font-weight:800}
     .annotation-format-buttons{display:flex;gap:5px}
     .annotation-format-buttons button{width:40px;font-size:16px}
     .annotation-format-buttons button[aria-pressed="true"]{background:#1465ea;color:#fff;border-color:#1465ea}
@@ -1530,7 +1531,6 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
           </div>
           <label>Borda <select id="annotationBorder" aria-label="Borda do formato"><option value="color">Com cor</option><option value="none">Sem cor</option></select></label>
           <label>Espessura <input id="annotationWidth" type="number" min="1" max="40" step="1" value="6" aria-label="Espessura do traço em pixels"> px</label>
-          <label>Texto <input id="annotationFontSize" type="number" min="8" max="300" step="1" value="36" aria-label="Tamanho do texto em pixels"> px</label>
         </div>
         <div class="annotation-toolbar annotation-selection" role="group" aria-label="Editar formato selecionado">
           <select id="annotationObjectList" aria-label="Selecionar formato para editar" disabled><option value="">Selecionar formato…</option></select>
@@ -1550,9 +1550,10 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
           <div class="annotation-toolbar" role="group" aria-label="Fonte e modelo do texto">
             <label>Fonte <select id="annotationFontFamily" aria-label="Fonte do texto"><option value="Poppins">Poppins</option><option value="Montserrat">Montserrat</option><option value="SESE Sans">SESE Sans</option><option value="SESE Serif">SESE Serif</option><option value="SESE Mono">SESE Mono</option><option value="Arial">Arial (sistema)</option></select></label>
             <label>Modelo <select id="annotationTextModel" aria-label="Modelo do texto"><option value="plain">Simples</option><option value="outline">Contorno branco</option><option value="shadow">Sombra</option><option value="label">Faixa escura</option><option value="warning">Destaque amarelo</option></select></label>
+            <span class="annotation-size-controls annotation-font-size" role="group" aria-label="Tamanho do texto"><span>Tamanho</span><button type="button" id="annotationFontSmallerBtn" aria-label="Diminuir tamanho do texto" title="Diminuir tamanho do texto">A−</button><input id="annotationFontSize" type="number" min="8" max="300" step="1" value="36" aria-label="Tamanho do texto em pixels"><span>px</span><button type="button" id="annotationFontLargerBtn" aria-label="Aumentar tamanho do texto" title="Aumentar tamanho do texto">A+</button></span>
             <div class="annotation-format-buttons" role="group" aria-label="Estilo da fonte"><button type="button" id="annotationBoldBtn" aria-label="Negrito" aria-pressed="true"><b>N</b></button><button type="button" id="annotationItalicBtn" aria-label="Itálico" aria-pressed="false"><i>I</i></button><button type="button" id="annotationUnderlineBtn" aria-label="Sublinhado" aria-pressed="false"><u>S</u></button></div>
           </div>
-          <div class="annotation-text-entry"><label for="annotationTextValue">Texto da marcação</label><textarea id="annotationTextValue" rows="2" placeholder="Digite e pressione Enter para inserir. Shift+Enter cria outra linha." maxlength="1000"></textarea><button type="button" id="annotationSubmitTextBtn">↵ Enviar texto</button><small id="annotationTextHint">Enter envia o texto. Shift+Enter cria outra linha. Depois, arraste para posicionar.</small></div>
+          <div class="annotation-text-entry"><label for="annotationTextValue">Texto da marcação</label><textarea id="annotationTextValue" rows="2" placeholder="Digite e pressione Enter para inserir. O texto quebra a linha sozinho para caber na foto." maxlength="1000"></textarea><button type="button" id="annotationSubmitTextBtn">↵ Enviar texto</button><small id="annotationTextHint">Enter envia o texto. A linha quebra sozinha para caber na foto. Depois, arraste para posicionar.</small></div>
         </div>
         <div id="annotationRepairPanel" class="annotation-options" hidden>
           <div class="annotation-toolbar" role="group" aria-label="Remover marcações antigas">
@@ -2040,10 +2041,36 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       const s = annotationTextStyle(item), family = annotationFontFamilies.includes(s.fontFamily) ? s.fontFamily : 'Arial';
       return (s.italic ? 'italic ' : '')+(s.bold ? '700 ' : '400 ')+s.fontSize+'px "'+family+'"';
     }
+    // Quebra automática: nenhuma linha passa da largura da foto.
+    function annotationWrapLines(ctx,text,maxWidth) {
+      const out = [];
+      String(text || '').split('\n').forEach(paragraph => {
+        if (ctx.measureText(paragraph).width <= maxWidth) { out.push(paragraph); return; }
+        let line = '';
+        paragraph.split(/(\s+)/).forEach(token => {
+          if (!token) return;
+          if (ctx.measureText(line+token).width <= maxWidth) { line += token; return; }
+          if (line.trim()) out.push(line.replace(/\s+$/,''));
+          line = '';
+          if (/^\s+$/.test(token)) return;
+          // Palavra maior que a foto: divide por caracteres.
+          let chars = Array.from(token);
+          while (chars.length > 1 && ctx.measureText(chars.join('')).width > maxWidth) {
+            let n = chars.length-1;
+            while (n > 1 && ctx.measureText(chars.slice(0,n).join('')).width > maxWidth) n--;
+            out.push(chars.slice(0,n).join('')); chars = chars.slice(n);
+          }
+          line = chars.join('');
+        });
+        out.push(line.replace(/\s+$/,''));
+      });
+      return out;
+    }
     function annotationTextMetrics(item) {
       const s = annotationTextStyle(item), ctx = annotationState.ctx;
-      const lines = String(s.text || '').split('\n'), pad = ['label','warning'].includes(s.textModel) ? s.fontSize*0.2 : 0;
+      const pad = ['label','warning'].includes(s.textModel) ? s.fontSize*0.2 : 0;
       ctx.save(); ctx.font = annotationFont(s);
+      const lines = annotationWrapLines(ctx,s.text,Math.max(s.fontSize,annotationState.canvas.width-pad*2));
       const widths = lines.map(line => ctx.measureText(line).width);
       ctx.restore();
       return {lines,widths,pad,lineHeight:s.fontSize*1.25,w:Math.max(1,...widths)+pad*2,h:s.fontSize*1.25*lines.length+pad*2};
@@ -2331,7 +2358,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       if (document.activeElement !== $('annotationTextValue')) $('annotationTextValue').value = isText ? item.text : annotationState.textDraft;
       $('annotationSubmitTextBtn').textContent = isText ? '↵ Atualizar texto' : '↵ Enviar texto';
       $('annotationSubmitTextBtn').disabled = !annotationState.ready;
-      $('annotationTextHint').textContent = isText ? 'Enter atualiza este texto. Shift+Enter cria outra linha. Arraste o texto para mover.' : 'Enter insere o texto no centro da foto. Shift+Enter cria outra linha. Você também pode clicar na foto para posicionar.';
+      $('annotationTextHint').textContent = isText ? 'Enter atualiza este texto. A linha quebra sozinha para caber na foto; ajuste o Tamanho acima. Arraste o texto para mover.' : 'Enter insere o texto no centro da foto. A linha quebra sozinha para caber na foto; ajuste o Tamanho acima.';
       $('annotationRepairMode').value = annotationState.repairMode;
       $('annotationRepairColor').value = annotationState.repairColor;
       $('annotationRepairColorLabel').hidden = annotationState.repairMode !== 'solid';
@@ -2397,11 +2424,18 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     }
     function annotationScale(item,factor) {
       const box = annotationBounds(item), canvas = annotationState.canvas;
-      factor = Math.min(factor,canvas.width/Math.max(1,box.w),canvas.height/Math.max(1,box.h));
       if (item.tool === 'text') {
-        const next = Math.max(8,Math.min(300,item.fontSize*factor)); factor = next/item.fontSize;
-        item.fontSize = next;
+        // A largura é resolvida pela quebra de linha; se ainda assim o bloco
+        // ficar mais alto que a foto, a fonte é reduzida até caber.
+        item.fontSize = Math.max(8,Math.min(300,item.fontSize*factor));
+        let guard = 0;
+        while (annotationBounds(item).h > canvas.height && item.fontSize > 8 && guard++ < 80) item.fontSize = Math.max(8,item.fontSize*0.95);
+        const after = annotationBounds(item);
+        item.a.x = box.x+box.w/2-after.w/2; item.a.y = box.y+box.h/2-after.h/2;
+        annotationKeepInside(item);
+        return;
       }
+      factor = Math.min(factor,canvas.width/Math.max(1,box.w),canvas.height/Math.max(1,box.h));
       const cx = box.x+box.w/2, cy = box.y+box.h/2;
       item.a.x = cx+(item.a.x-cx)*factor; item.a.y = cy+(item.a.y-cy)*factor;
       if (item.b) { item.b.x = cx+(item.b.x-cx)*factor; item.b.y = cy+(item.b.y-cy)*factor; }
@@ -2653,6 +2687,9 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     $('annotationColor').addEventListener('input',event => annotationChangeStyle('color',event.target.value));
     $('annotationWidth').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 1) annotationChangeStyle('width',Math.min(40,value)); else annotationSyncControls(); });
     $('annotationFontSize').addEventListener('change',event => { const value = Number(event.target.value); if (Number.isFinite(value) && value >= 8) annotationChangeStyle('fontSize',Math.min(300,value)); else annotationSyncControls(); });
+    const annotationStepFontSize = delta => annotationChangeStyle('fontSize',Math.max(8,Math.min(300,Math.round(annotationState.fontSize)+delta)));
+    $('annotationFontSmallerBtn').addEventListener('click',() => annotationStepFontSize(-4));
+    $('annotationFontLargerBtn').addEventListener('click',() => annotationStepFontSize(4));
     $('annotationMagnification').addEventListener('change',event => annotationChangeStyle('magnification',annotationMagnification({magnification:event.target.value})));
     $('annotationObjectList').addEventListener('change',event => { const selected = event.target.value; annotationTextCommit(); annotationState.selected = selected || null; annotationState.tool = 'select'; annotationState.samplePicking = false; annotationSyncControls(); annotationSetTool('select'); });
     $('annotationFontFamily').addEventListener('change',event => annotationUpdateTextStyle('fontFamily',event.target.value));
