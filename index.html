@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2026.10.06.checklist" />
+  <meta name="app-version" content="2026.10.06.checklist-sync" />
   <title>SESE Studio - Regras de Segurança</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3480,5 +3480,9 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       $('syncRetry').hidden = true;
     }, {once:true});
   </script>
+  <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js?v=20261006-sync"></script>
+  <script src="cloud-sync.js?v=20261006-sync"></script>
 </body>
 </html>
