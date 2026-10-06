@@ -1045,6 +1045,18 @@
     @media screen and (max-width:640px){.annotation-dialog{width:calc(100vw - 12px);max-height:calc(100vh - 12px);border-radius:14px}.annotation-shell{max-height:calc(100vh - 12px)}.annotation-header{padding:13px 14px}.annotation-toolbar{padding:8px 10px;gap:5px}.annotation-toolbar button{padding:7px 8px;font-size:11px}.annotation-canvas-wrap{padding:10px;max-height:calc(100vh - 250px)}#annotationCanvas{max-height:calc(100vh - 300px)}.annotation-footer{padding:10px;align-items:flex-end}.annotation-footer small{max-width:48%}.annotation-footer-actions button{padding:8px 12px}}
     @media print{.annotation-dialog{display:none!important}.photo-annotate{display:none!important}}
 
+    /* Navegação da foto no editor: zoom + pan sem alterar o arquivo original. */
+    .annotation-view-toolbar{display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;background:#eef3f8;border-bottom:1px solid #d8e0ea;position:sticky;top:0;z-index:8}
+    .annotation-view-toolbar button{min-height:36px;padding:7px 11px;background:#fff;color:#334155;border:1px solid #cbd5e1;border-radius:9px;font-size:12px}
+    .annotation-view-toolbar button:hover{transform:none;border-color:#1465ea;color:#1465ea}
+    .annotation-view-toolbar button.active{background:#1465ea;color:#fff;border-color:#1465ea}
+    #annotationZoomLabel{min-width:58px;text-align:center;font-size:12px;font-weight:800;color:#153c72}
+    .annotation-canvas-wrap{position:relative;overflow:hidden!important;overscroll-behavior:none}
+    #annotationCanvas{transform-origin:center center;will-change:transform}
+    #annotationCanvas.view-pan-active{cursor:grab!important}
+    #annotationCanvas.view-panning{cursor:grabbing!important}
+    @media screen and (max-width:640px){.annotation-view-toolbar{gap:5px;padding:7px 8px}.annotation-view-toolbar button{min-height:40px;padding:7px 9px}#annotationZoomLabel{min-width:50px}}
+
     @media screen and (max-width:1024px) and (orientation:portrait){
       body[data-mobile-tab="view"] .workspace{padding:8px 10px 6px}
       body[data-mobile-tab="view"] .hero-title{gap:10px;align-items:center}
@@ -1519,9 +1531,16 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
         </div>
 
         <p id="annotationSelectionStatus" role="status">Escolha uma ferramenta e desenhe sobre a foto. Depois de aplicar, reabra pelo lápis para editar qualquer formato.</p>
-        <div class="annotation-canvas-wrap"><canvas id="annotationCanvas" tabindex="0" aria-label="Foto com formatos editáveis. Use a lista para selecionar; setas do teclado movem e os botões de tamanho redimensionam." aria-describedby="annotationSelectionStatus"></canvas></div>
+        <div class="annotation-view-toolbar" role="group" aria-label="Zoom e movimentação da foto">
+          <button type="button" id="annotationZoomOutBtn" title="Diminuir zoom">− Zoom</button>
+          <span id="annotationZoomLabel" aria-live="polite">100%</span>
+          <button type="button" id="annotationZoomInBtn" title="Aumentar zoom">+ Zoom</button>
+          <button type="button" id="annotationPanBtn" aria-pressed="false" title="Ative e arraste para movimentar a foto">✋ Mover</button>
+          <button type="button" id="annotationViewResetBtn" title="Voltar para 100% e centralizar">⟲ Centralizar</button>
+        </div>
+        <div class="annotation-canvas-wrap"><canvas id="annotationCanvas" tabindex="0" aria-label="Foto com formatos editáveis. Use os controles de zoom e o botão Mover para navegar pela imagem." aria-describedby="annotationSelectionStatus"></canvas></div>
       </div>
-      <div class="annotation-footer"><small>Arraste as alças para redimensionar. Para editar novamente, abra o lápis da foto.</small><div class="annotation-footer-actions"><button type="button" class="secondary" id="annotationCancelBtn">Cancelar</button><button type="button" id="annotationApplyBtn" disabled>Aplicar marcações</button></div></div>
+      <div class="annotation-footer"><small>Use a roda do mouse ou os botões para zoom. Ative Mover e arraste a foto; segurar Espaço também permite arrastar. As anotações continuam editáveis.</small><div class="annotation-footer-actions"><button type="button" class="secondary" id="annotationCancelBtn">Cancelar</button><button type="button" id="annotationApplyBtn" disabled>Aplicar marcações</button></div></div>
     </div>
   </dialog>
 
@@ -1921,7 +1940,8 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       tool: 'select', color: '#ff0000', width: 6, borderVisible: true, fontSize: 36, magnification: 2,
       fontFamily:'Poppins',bold:true,italic:false,underline:false,textModel:'outline',textDraft:'',
       repairMode:'clone',repairSample:null,repairColor:'#ffffff',samplePicking:false,
-      objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0
+      objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0,
+      viewZoom: 1, viewX: 0, viewY: 0, viewPan: false, viewDrag: null
     };
     const annotationNames = {arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', magnifier:'Lupa', text:'Texto', patch:'Retoque de marcação antiga'};
     const annotationClone = value => JSON.parse(JSON.stringify(value));
@@ -2016,6 +2036,49 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     }
 
     const annotationFontsReady = Promise.all(['Poppins','Montserrat','SESE Sans','SESE Serif','SESE Mono'].map(family => document.fonts.load('16px "'+family+'"'))).catch(error => console.warn('Fonte indisponível:',error));
+
+    function annotationViewApply() {
+      const canvas = annotationState.canvas || $('annotationCanvas');
+      if (!canvas) return;
+      const zoom = Math.max(0.25, Math.min(6, Number(annotationState.viewZoom) || 1));
+      annotationState.viewZoom = zoom;
+      canvas.style.transform = `translate(${annotationState.viewX}px, ${annotationState.viewY}px) scale(${zoom})`;
+      canvas.classList.toggle('view-pan-active', !!annotationState.viewPan);
+      canvas.classList.toggle('view-panning', !!annotationState.viewDrag);
+      const label = $('annotationZoomLabel'); if (label) label.textContent = Math.round(zoom*100)+'%';
+      const pan = $('annotationPanBtn'); if (pan) { pan.classList.toggle('active',!!annotationState.viewPan); pan.setAttribute('aria-pressed',String(!!annotationState.viewPan)); }
+    }
+    function annotationViewReset() {
+      annotationState.viewZoom = 1; annotationState.viewX = 0; annotationState.viewY = 0; annotationState.viewDrag = null; annotationViewApply();
+    }
+    function annotationViewZoom(factor) {
+      if (!annotationState.ready) return;
+      annotationState.viewZoom = Math.max(0.25,Math.min(6,annotationState.viewZoom*factor));
+      annotationViewApply();
+    }
+    function annotationViewPanStart(event) {
+      if (!annotationState.ready || annotationState.drag) return false;
+      const usePan = annotationState.viewPan || event.button === 1 || (annotationState.spacePan && event.button === 0);
+      if (!usePan) return false;
+      event.preventDefault(); event.stopImmediatePropagation();
+      annotationState.viewDrag = {pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,baseX:annotationState.viewX,baseY:annotationState.viewY};
+      annotationState.canvas.setPointerCapture?.(event.pointerId); annotationViewApply();
+      return true;
+    }
+    function annotationViewPanMove(event) {
+      const d = annotationState.viewDrag; if (!d || d.pointerId !== event.pointerId) return false;
+      event.preventDefault(); event.stopImmediatePropagation();
+      annotationState.viewX = d.baseX + (event.clientX-d.startX);
+      annotationState.viewY = d.baseY + (event.clientY-d.startY);
+      annotationViewApply(); return true;
+    }
+    function annotationViewPanEnd(event) {
+      const d = annotationState.viewDrag; if (!d || d.pointerId !== event.pointerId) return false;
+      event.preventDefault(); event.stopImmediatePropagation();
+      annotationState.viewDrag = null;
+      if (annotationState.canvas.hasPointerCapture?.(event.pointerId)) annotationState.canvas.releasePointerCapture(event.pointerId);
+      annotationViewApply(); return true;
+    }
 
     function annotationPoint(event) {
       const canvas = annotationState.canvas, rect = annotationState.drag?.canvasRect || canvas.getBoundingClientRect();
@@ -2324,7 +2387,8 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       const token = ++annotationState.loadToken;
       $('annotationSavedNotice').hidden = !(editable || legacyEditable);
       $('annotationSavedNotice').textContent = (editable || legacyEditable) ? 'Marcações salvas e editáveis. Clique em um item da lista para alterar.' : '';
-      Object.assign(annotationState,{side,index,page,source:(editable || legacyEditable) ? saved.source : src,canvas:$('annotationCanvas'),ctx:null,image:null,ready:false,selected:null,drag:null,history:[],future:[],repairSample:null,samplePicking:false,objects:(editable || legacyEditable) ? annotationClone(saved.objects) : []});
+      Object.assign(annotationState,{side,index,page,source:(editable || legacyEditable) ? saved.source : src,canvas:$('annotationCanvas'),ctx:null,image:null,ready:false,selected:null,drag:null,history:[],future:[],repairSample:null,samplePicking:false,objects:(editable || legacyEditable) ? annotationClone(saved.objects) : [],viewZoom:1,viewX:0,viewY:0,viewPan:false,viewDrag:null,spacePan:false});
+      annotationViewApply();
       annotationState.canvas.width = 1; annotationState.canvas.height = 1;
       annotationSetTool('select');
       const dialog = $('annotationDialog'); if (!dialog.open) dialog.showModal();
@@ -2337,7 +2401,7 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
         annotationState.canvas.height = (editable || legacyEditable) && saved.height > 0 ? saved.height : Math.max(1,Math.round(image.naturalHeight*ratio));
         annotationState.ctx = annotationState.canvas.getContext('2d'); annotationState.ready = true;
         annotationState.selected = annotationState.objects.at(-1)?.id || null;
-        annotationSyncControls(); annotationRender();
+        annotationSyncControls(); annotationRender(); annotationViewApply();
       };
       image.onerror = () => { if (token !== annotationState.loadToken) return; alert('Não foi possível abrir esta foto para marcação.'); closeAnnotationEditor(); };
       image.src = annotationState.source;
@@ -2345,7 +2409,8 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
     function closeAnnotationEditor() {
       annotationState.loadToken++;
       if ($('annotationDialog').open) $('annotationDialog').close();
-      Object.assign(annotationState,{side:null,index:-1,page:null,image:null,ctx:null,ready:false,objects:[],selected:null,drag:null,history:[],future:[]});
+      Object.assign(annotationState,{side:null,index:-1,page:null,image:null,ctx:null,ready:false,objects:[],selected:null,drag:null,history:[],future:[],viewZoom:1,viewX:0,viewY:0,viewPan:false,viewDrag:null,spacePan:false});
+      annotationViewApply();
     }
     function applyAnnotationEditor() {
       annotationTextCommit();
@@ -2472,6 +2537,22 @@ body[data-workspace="checklist"] .sidebar .group,body[data-workspace="checklist"
       annotationSyncControls(); annotationRender();
     }
 
+    // Navegação da imagem: botões, roda do mouse e arraste com a ferramenta Mover.
+    $('annotationZoomInBtn').addEventListener('click',()=>annotationViewZoom(1.2));
+    $('annotationZoomOutBtn').addEventListener('click',()=>annotationViewZoom(1/1.2));
+    $('annotationViewResetBtn').addEventListener('click',annotationViewReset);
+    $('annotationPanBtn').addEventListener('click',()=>{annotationState.viewPan=!annotationState.viewPan; annotationViewApply();});
+    $('annotationCanvas').addEventListener('wheel',event=>{
+      if (!annotationState.ready) return;
+      event.preventDefault();
+      annotationViewZoom(event.deltaY < 0 ? 1.12 : 1/1.12);
+    },{passive:false});
+    $('annotationCanvas').addEventListener('pointerdown',event=>annotationViewPanStart(event),true);
+    $('annotationCanvas').addEventListener('pointermove',event=>annotationViewPanMove(event),true);
+    $('annotationCanvas').addEventListener('pointerup',event=>annotationViewPanEnd(event),true);
+    $('annotationCanvas').addEventListener('pointercancel',event=>annotationViewPanEnd(event),true);
+    window.addEventListener('keydown',event=>{ if ($('annotationDialog').open && event.code==='Space' && !event.repeat && !event.target.matches('input,textarea,select,[contenteditable="true"]')) { annotationState.spacePan=true; annotationViewApply(); } });
+    window.addEventListener('keyup',event=>{ if (event.code==='Space') { annotationState.spacePan=false; annotationViewApply(); } });
     $('annotationCanvas').addEventListener('pointerdown',annotationPointerDown);
     $('annotationCanvas').addEventListener('pointermove',annotationPointerMove);
     $('annotationCanvas').addEventListener('pointerup',annotationPointerUp);
