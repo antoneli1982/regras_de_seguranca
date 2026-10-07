@@ -8,7 +8,21 @@
   const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   let ref, ready = false, connected = false, saving = false;
   let view = null, latest = null, pending = {}, timer;
-  const fields = ['number', 'title', 'leftHeading', 'rightHeading', 'okLabel', 'nokLabel', 'logo', 'leftImages', 'rightImages', 'showIncorrect'];
+  const OUTBOX = 'cloud-pending:' + ROOT;
+  let localWrites = Promise.resolve(), localSaving = 0, localError = false;
+  function persistPending() {
+    const snapshot = copy(pending);
+    localSaving++;
+    localWrites = localWrites.catch(() => {}).then(() => idbSet(OUTBOX, snapshot));
+    localWrites.then(() => { localError = false; }, error => {
+      localError = true;
+      console.error('Falha ao preservar alterações:', error);
+      message('Falha ao salvar neste dispositivo. Mantenha a aba aberta e tente novamente.');
+      retry.hidden = false;
+    }).finally(() => { localSaving--; });
+    return localWrites;
+  }
+  const fields = ['number', 'title', 'leftHeading', 'rightHeading', 'okLabel', 'nokLabel', 'logo', 'leftImages', 'rightImages', 'showCorrect', 'showIncorrect'];
 
   function message(text) { status.textContent = text; }
   async function compressLegacyPhotos() {
@@ -38,7 +52,7 @@
       const item = {};
       fields.forEach(key => {
         if (key.endsWith('Images')) item[key] = [...sideImages(page, key.startsWith('left') ? 'left' : 'right')];
-        else if (key === 'showIncorrect') item[key] = page[key] !== false;
+        else if (key === 'showIncorrect' || key === 'showCorrect') item[key] = page[key] !== false;
         else item[key] = String(page[key] ?? '');
       });
       model.pages[page.id] = item;
@@ -126,6 +140,7 @@
     if (!equal(view.order, next.order)) pending.order = next.order;
     view = next;
     if (Object.keys(pending).length) {
+      persistPending();
       message(connected ? 'Salvando alterações…' : 'Sem conexão — alterações aguardando envio');
       clearTimeout(timer);
       timer = setTimeout(flush, 500);
@@ -139,22 +154,28 @@
     const patch = copy(pending);
     message('Salvando alterações…');
     try {
-      const result = await ref.transaction(remote => {
-        if (!remote) return; // Never replace a missing server project with stale local data.
-        const merged = merge(remote, patch);
-        if (JSON.stringify(merged).length > 12000000) throw new Error('Projeto grande demais. Remova algumas fotos e tente novamente.');
-        merged.updatedAt = firebase.database.ServerValue.TIMESTAMP;
-        return merged;
-      }, undefined, false);
-      if (!result.committed) throw new Error('Projeto remoto indisponível. Recarregue a página.');
+      await persistPending();
+      const remote = (await ref.once('value')).val();
+      if (!remote) throw new Error('Projeto remoto indisponível.');
+      // Send only changed fields; photos no longer resend the entire project
+      // through a transaction with a much smaller payload limit.
+      const changes = copy(patch);
+      Object.keys(changes).forEach(path => {
+        const [, id, field] = path.split('/');
+        if (path.startsWith('pages/') && field && !remote.pages?.[id]) delete changes[path];
+      });
+      if (changes.order) changes.order = merge(remote, changes).order;
+      changes.updatedAt = firebase.database.ServerValue.TIMESTAMP;
+      await ref.update(changes);
       Object.keys(patch).forEach(key => { if (equal(patch[key], pending[key])) delete pending[key]; });
-      latest = normalize(result.snapshot.val());
+      await persistPending();
+      latest = normalize((await ref.once('value')).val());
       display(merge(latest, pending));
       message(Object.keys(pending).length ? 'Salvando alterações…' : 'Sincronizado entre dispositivos');
       retry.hidden = true;
     } catch (error) {
       console.error('Falha na sincronização:', error);
-      message('Não foi possível salvar. Suas alterações continuam nesta aba.');
+      message(localError ? 'Não foi possível salvar. Mantenha esta aba aberta.' : 'Não foi possível sincronizar. Alterações preservadas neste dispositivo; tente novamente.');
       retry.hidden = false;
     } finally {
       saving = false;
@@ -170,6 +191,7 @@
       const instance = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
       const db = instance.database();
       ref = db.ref(ROOT);
+      pending = (await idbGet(OUTBOX)) || {};
       const snapshot = await ref.once('value');
       let remote = snapshot.val();
       if (remote === null) {
@@ -177,7 +199,6 @@
         await restoreAutoSavedProject();
         await compressLegacyPhotos();
         const seed = pack();
-        if (JSON.stringify(seed).length > 12000000) throw new Error('Backup grande demais para carregar.');
         const result = await ref.transaction(existing => existing === null ? seed : undefined, undefined, false);
         remote = result.snapshot.val();
       }
@@ -188,12 +209,12 @@
         remote = (await ref.once('value')).val();
       }
       latest = normalize(remote);
-      display(latest);
+      display(merge(latest, pending));
       ready = true;
       app.inert = false;
       db.ref('.info/connected').on('value', snap => {
         connected = snap.val() === true;
-        message(connected ? 'Sincronizado entre dispositivos' : 'Sem conexão — alterações aguardando envio');
+        message(Object.keys(pending).length ? 'Alterações preservadas — aguardando sincronização' : connected ? 'Sincronizado entre dispositivos' : 'Sem conexão — alterações aguardando envio');
         if (connected && Object.keys(pending).length) flush();
       });
       ref.on('value', snap => {
@@ -218,7 +239,7 @@
   window.autoSaveProject = capture;
   retry.onclick = () => ready ? flush() : start();
   window.addEventListener('beforeunload', event => {
-    if (saving || Object.keys(pending).length) { event.preventDefault(); event.returnValue = ''; }
+    if (saving || localSaving || localError || Object.keys(pending).length) { event.preventDefault(); event.returnValue = ''; }
   });
   // Existing backup stays local; restoring it is an explicit shared-project edit.
   const restoreBackup = loadProject;
