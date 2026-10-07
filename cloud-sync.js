@@ -22,7 +22,15 @@
     }).finally(() => { localSaving--; });
     return localWrites;
   }
-  const fields = ['number', 'title', 'leftHeading', 'rightHeading', 'okLabel', 'nokLabel', 'logo', 'leftImages', 'rightImages', 'showCorrect', 'showIncorrect'];
+  const photoFields = ['leftAnnotations', 'rightAnnotations', 'leftPhotoTransforms', 'rightPhotoTransforms'];
+  const fields = ['number', 'title', 'leftHeading', 'rightHeading', 'okLabel', 'nokLabel', 'logo', 'leftImages', 'rightImages', 'showCorrect', 'showIncorrect', ...photoFields];
+
+  function photoMetadata(page, key) {
+    const side = key.startsWith('left') ? 'left' : 'right';
+    // Firebase omits empty arrays and may return sparse arrays as keyed objects.
+    return Array.from({ length: page[side + 'Images'].length }, (_, index) =>
+      copy(page[key]?.[index] ?? (key.endsWith('PhotoTransforms') ? { scale: 1, x: 0, y: 0 } : null)));
+  }
 
   function message(text) { status.textContent = text; }
   async function compressLegacyPhotos() {
@@ -52,6 +60,7 @@
       const item = {};
       fields.forEach(key => {
         if (key.endsWith('Images')) item[key] = [...sideImages(page, key.startsWith('left') ? 'left' : 'right')];
+        else if (photoFields.includes(key)) item[key] = photoMetadata(page, key);
         else if (key === 'showIncorrect' || key === 'showCorrect') item[key] = page[key] !== false;
         else item[key] = String(page[key] ?? '');
       });
@@ -71,6 +80,7 @@
       if (!result.order.includes(id)) result.order.push(id);
       result.pages[id].leftImages ||= [];
       result.pages[id].rightImages ||= [];
+      photoFields.forEach(key => { result.pages[id][key] = photoMetadata(result.pages[id], key); });
     });
     if (!result.order.length) throw new Error('Projeto sem páginas.');
     return result;
@@ -102,7 +112,14 @@
   }
   function display(model) {
     const selected = pages[currentPage]?.id;
-    pages = model.order.map(id => ({ ...copy(model.pages[id]), id }));
+    const existing = new Map(pages.map(page => [page.id, page]));
+    pages = model.order.map(id => {
+      // Uploads and open photo editors hold this object while awaiting image reads.
+      // Replacing it on every Firebase event silently cancels those operations.
+      const page = existing.get(id) || {};
+      Object.keys(page).forEach(key => { delete page[key]; });
+      return Object.assign(page, copy(model.pages[id]), { id });
+    });
     const samePage = pages.findIndex(p => p.id === selected);
     currentPage = samePage >= 0 ? samePage : Math.min(currentPage, pages.length - 1);
     checklistState = {id: checklistSeed.id, tasks: Object.values(copy(model.checklist || {}))};
