@@ -1381,8 +1381,25 @@ License: bitstream-vera
       body.tv-mode .slide.portrait-slide .section-title{font-size:max(14px,calc(21px * var(--slide-unit) * var(--text-fit)))}
     }
   </style>
+  <script>
+    // Modo TV: index.html#tv (ou ?tv). Opções: tempo=15 (segundos por página), som=0 (sem som).
+    (() => {
+      const params = new URLSearchParams(location.search + '&' + location.hash.slice(1));
+      if (params.has('tv')) document.documentElement.classList.add('kiosk', 'kiosk-starting');
+    })();
+  </script>
+  <style id="kioskStyles">
+    html.kiosk, html.kiosk body{background:#000}
+    html.kiosk-starting body > *:not(#kioskSplash){visibility:hidden}
+    #kioskSplash{display:none}
+    html.kiosk-starting #kioskSplash{display:flex;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#000;color:#fff;font:600 22px Montserrat,Arial,sans-serif;text-align:center}
+    #kioskSplash small{font-weight:400;font-size:15px;opacity:.65}
+    html.kiosk body.tv-mode:not(.presentation-controls-visible), html.kiosk body.tv-mode:not(.presentation-controls-visible) *{cursor:none!important}
+    html.kiosk #syncBar{display:none!important}
+  </style>
 </head>
 <body data-mobile-tab="view" data-workspace="editor">
+  <div id="kioskSplash" aria-live="polite">Preparando apresentação…<small id="kioskSplashInfo">Carregando conteúdo</small></div>
   <div id="syncBar" role="status" style="padding:10px 16px;background:#e9f2ff;color:#153c72;font:600 13px Arial;display:flex;gap:12px;align-items:center">
     <span id="syncStatus">Carregando ferramenta…</span>
     <button id="syncRetry" hidden>Tentar novamente</button>
@@ -3716,6 +3733,8 @@ License: bitstream-vera
 
     function downloadHTML() {
       const root = document.documentElement.cloneNode(true);
+      root.classList.remove('kiosk','kiosk-starting');
+      root.querySelector('#kioskSplash')?.remove();
       // O HTML exportado abre no editor e referencia o vídeo pelo endereço completo.
       root.querySelector('body').classList.remove('tv-mode','landscape-mode','presentation-controls-visible','intro-playing');
       root.querySelector('#presentationIntro').hidden = true;
@@ -4241,6 +4260,8 @@ const firebaseConfig = {
     // Grava a cópia local uma vez por rajada de atualizações, não a cada evento.
     clearTimeout(cacheTimer);
     cacheTimer = setTimeout(() => idbSet('cloud-cache', projectSnapshot()).catch(console.warn), 1000);
+    window.seseDataReady = true;
+    window.dispatchEvent(new Event('sese:data'));
   }
   async function showCachedCopy() {
     // Abre na hora com a última cópia deste aparelho; a nuvem atualiza em seguida.
@@ -4428,6 +4449,87 @@ const firebaseConfig = {
 })();
 
 </script>
+  <script>
+  /* Modo TV (quiosque): abre direto na apresentação automática, em ciclo contínuo,
+     sem cliques. Ativado por index.html#tv — opções: #tv&tempo=15&som=0 */
+  (() => {
+    if (!document.documentElement.classList.contains('kiosk')) return;
+    const params = new URLSearchParams(location.search + '&' + location.hash.slice(1));
+    const video = $('openingVideo');
+    const startedAt = Date.now();
+    let lastActivity = Date.now(), started = false, videoGuard = 0, wakeLock = null;
+
+    if (params.get('som') === '0') video.muted = true;
+    video.preload = 'auto';
+
+    const seconds = parseInt(params.get('tempo'), 10);
+    if (seconds >= 5 && seconds <= 600) {
+      const select = $('autoTvInterval');
+      if (![...select.options].some(o => o.value === String(seconds))) select.add(new Option(seconds + ' s', String(seconds)));
+      select.value = String(seconds);
+      select.dispatchEvent(new Event('change'));
+    }
+
+    // Sem ninguém para tocar na TV: se o navegador bloquear o som, toca sem som;
+    // se o vídeo faltar ou falhar, segue direto para as páginas.
+    window.showOpeningVideoPrompt = (text, retry = false) => {
+      if (!openingVideoActive) return;
+      if (!retry && !video.muted) { video.muted = true; playOpeningVideo(); return; }
+      setTimeout(() => { if (openingVideoActive) finishOpeningVideo(); }, 2500);
+    };
+
+    function begin() {
+      if (started) return;
+      started = true;
+      document.documentElement.classList.remove('kiosk-starting');
+      if (!document.body.classList.contains('tv-mode')) startAutoTv();
+      requestSlideLayout();
+    }
+    if (window.seseDataReady) begin();
+    else {
+      window.addEventListener('sese:data', () => setTimeout(begin, 300), { once: true });
+      setTimeout(() => { $('kioskSplashInfo').textContent = 'Aguardando conexão…'; }, 4000);
+      setTimeout(begin, 15000);
+    }
+    window.addEventListener('sese:data', () => { if (started) requestSlideLayout(); });
+
+    // Vigia: nada fica travado. Vídeo parado além da conta é pulado; se alguém sair
+    // da apresentação, ela volta sozinha após 2 minutos sem uso.
+    ['pointerdown', 'keydown', 'touchstart', 'pointermove'].forEach(type =>
+      document.addEventListener(type, () => { lastActivity = Date.now(); }, { passive: true, capture: true }));
+    setInterval(() => {
+      if (!started) return;
+      if (openingVideoActive) {
+        const limit = (isFinite(video.duration) ? video.duration : 120) + 20;
+        if (video.paused || video.ended) videoGuard++; else videoGuard = 0;
+        if (videoGuard >= 10 || video.currentTime > limit) { videoGuard = 0; finishOpeningVideo(); }
+      } else videoGuard = 0;
+      if (!document.body.classList.contains('tv-mode') && Date.now() - lastActivity > 120000) {
+        document.querySelectorAll('dialog[open]').forEach(d => d.close());
+        startAutoTv();
+      }
+      // Recarrega uma vez por dia de madrugada para pegar versões novas e liberar memória.
+      const hour = new Date().getHours();
+      const canReload = location.protocol === 'file:' || navigator.serviceWorker?.controller || navigator.onLine;
+      if (Date.now() - startedAt > 20 * 3600000 && hour >= 3 && hour < 5 && canReload) location.reload();
+    }, 1000);
+
+    // Mantém a tela acesa (quando o navegador permite).
+    async function keepAwake() {
+      try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } } catch (error) { console.info('Tela ativa não disponível:', error.message); }
+    }
+    keepAwake();
+    document.addEventListener('visibilitychange', keepAwake);
+
+    // Versão hospedada: guarda o vídeo no aparelho para tocar mesmo sem internet.
+    if (navigator.serviceWorker && /^https?:$/.test(location.protocol)) {
+      navigator.serviceWorker.ready.then(reg => reg.active?.postMessage({ cacheVideo: new URL(video.dataset.src, location.href).href })).catch(() => {});
+    }
+  })();
+  </script>
   <script>
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => {

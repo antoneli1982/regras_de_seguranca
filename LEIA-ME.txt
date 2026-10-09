@@ -1,0 +1,28 @@
+SESE STUDIO - MODO TV
+=====================
+
+COMPUTADOR / MINI PC LIGADO NA TV (Windows)
+1. Copie esta pasta inteira para C:\SESE-TV (evite pastas com acento ou espaço).
+2. Dê dois cliques em "Abrir-TV.bat".
+   A apresentação abre em tela cheia, toca o vídeo de abertura, passa as
+   páginas sozinha e repete o ciclo sem parar.
+3. Para abrir sozinho quando o computador ligar:
+   Win+R  ->  shell:startup  ->  cole ali um atalho do "Abrir-TV.bat".
+4. Para sair: Alt+F4.
+5. Tempo de cada página: abra o "Abrir-TV.bat" no Bloco de Notas e mude
+   a linha  set "TEMPO=10".
+
+Na primeira vez, deixe o computador com internet por alguns minutos para
+baixar as páginas e fotos. Depois funciona sem internet e se atualiza sozinho
+sempre que houver sinal.
+
+SMART TV / TV BOX COM NAVEGADOR (versão hospedada no site)
+Abra o endereço do material com  #tv  no final, por exemplo:
+   https://seusite/index.html#tv
+   https://seusite/index.html#tv&tempo=15     (15 s por página)
+   https://seusite/index.html#tv&som=0        (vídeo sem som)
+Os arquivos index.html, sw.js e abertura-sese.mp4 precisam estar juntos
+na mesma pasta do site.
+
+Mantenha os quatro arquivos sempre juntos:
+   index.html, sw.js, abertura-sese.mp4, Abrir-TV.bat
