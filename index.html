@@ -1612,6 +1612,8 @@ License: bitstream-vera
           <button type="button" data-annotation-tool="text" aria-pressed="false">T Texto</button>
           <button type="button" data-annotation-tool="check" aria-pressed="false" title="Inserir ícone de correto (clique na foto ou arraste para definir o tamanho)"><svg class="stamp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#16a34a"/><circle class="stamp-ring" cx="12" cy="12" r="11" fill="none" stroke="#0f7a35" stroke-width="1"/><path d="M6.6 12.6l3.5 3.5 7.3-7.6" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Correto</button>
           <button type="button" data-annotation-tool="cross" aria-pressed="false" title="Inserir ícone de incorreto (clique na foto ou arraste para definir o tamanho)"><svg class="stamp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#dc2626"/><circle class="stamp-ring" cx="12" cy="12" r="11" fill="none" stroke="#a51b1b" stroke-width="1"/><path d="M8 8l8 8M16 8l-8 8" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>Incorreto</button>
+          <button type="button" id="annotationOverlayBtn" title="Sobrepor uma figura auxiliar na foto (você define o tamanho)"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:-3px"><rect x="3" y="3" width="13" height="13" rx="2"/><rect x="9" y="9" width="12" height="12" rx="2" fill="currentColor" fill-opacity=".18"/></svg> Figura</button>
+          <input type="file" id="annotationOverlayInput" accept="image/*" hidden>
           <button type="button" data-annotation-tool="patch" aria-pressed="false" title="Cobrir marcações antigas que fazem parte da foto">▧ Apagar antigas</button>
           <span class="toolbar-sep" aria-hidden="true"></span>
           <button type="button" id="annotationUndoBtn" title="Desfazer (Ctrl+Z)" disabled>↶ Desfazer</button>
@@ -1642,6 +1644,16 @@ License: bitstream-vera
         </div>
         <div id="annotationObjectButtons" class="annotation-object-buttons" role="group" aria-label="Escolher marcação para editar"></div>
         <p id="annotationSavedNotice" role="status" hidden></p>
+        <div id="annotationOverlayPanel" class="annotation-options" hidden>
+          <div class="annotation-toolbar" role="group" aria-label="Ajustes da figura sobreposta">
+            <button type="button" id="annotationOverlayReplaceBtn">Trocar figura</button>
+            <label for="annotationOverlayOpacity" style="display:inline-flex;align-items:center;gap:6px">Opacidade <input id="annotationOverlayOpacity" type="range" min="10" max="100" step="5" value="100"><output id="annotationOverlayOpacityValue" for="annotationOverlayOpacity">100%</output></label>
+            <label>Proporção <select id="annotationOverlayRatio" aria-label="Manter proporção da figura"><option value="keep">Manter proporção</option><option value="free">Livre</option></select></label>
+            <label>Largura <input id="annotationOverlayW" type="number" min="8" step="1" aria-label="Largura da figura em pixels"> px</label>
+            <label>Altura <input id="annotationOverlayH" type="number" min="8" step="1" aria-label="Altura da figura em pixels"> px</label>
+          </div>
+          <p>Arraste a figura para posicioná-la. Defina o tamanho pelas alças dos cantos, pelos botões − / + ou digitando largura e altura. A borda usa a cor e a espessura escolhidas acima (ou "Sem cor").</p>
+        </div>
         <div id="annotationMagnifierPanel" class="annotation-options" hidden>
           <div class="annotation-toolbar" role="group" aria-label="Ajustes da lupa">
             <label for="annotationMagnification">Ampliação <select id="annotationMagnification"><option value="1.5">1,5×</option><option value="2" selected>2×</option><option value="2.5">2,5×</option><option value="3">3×</option><option value="4">4×</option><option value="6">6×</option></select></label>
@@ -2129,10 +2141,87 @@ License: bitstream-vera
       objects: [], selected: null, drag: null, history: [], future: [], ready: false, loadToken: 0,
       viewZoom: 1, viewX: 0, viewY: 0, viewPan: false, viewDrag: null
     };
-    const annotationNames = {arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', magnifier:'Lupa', text:'Texto', patch:'Retoque de marcação antiga', check:'Correto ✓', cross:'Incorreto ✗'};
+    const annotationNames = {overlay:'Figura sobreposta', arrow:'Seta', line:'Linha', rect:'Retângulo', circle:'Círculo', magnifier:'Lupa', text:'Texto', patch:'Retoque de marcação antiga', check:'Correto ✓', cross:'Incorreto ✗'};
     const annotationStampTools = ['check','cross'];
     const annotationIsStamp = item => annotationStampTools.includes(typeof item === 'string' ? item : item?.tool);
     const annotationStampColors = {check:'#16a34a', cross:'#dc2626'};
+    // Figuras sobrepostas: cada imagem é carregada uma vez e reaproveitada no desenho.
+    const annotationOverlayCache = new Map();
+    function annotationOverlayImage(src) {
+      let entry = annotationOverlayCache.get(src);
+      if (!entry) {
+        const img = new Image();
+        entry = {img, ready:false, promise:new Promise(resolve => {
+          img.onload = () => { entry.ready = true; resolve(); if (annotationState.ready) annotationRender(); };
+          img.onerror = () => resolve();
+        })};
+        annotationOverlayCache.set(src,entry); img.src = src;
+      }
+      return entry;
+    }
+    function annotationDrawOverlay(ctx,item) {
+      const box = annotationBounds(item); if (box.w < 1 || box.h < 1) return;
+      const entry = annotationOverlayImage(item.src);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0.1,Math.min(1,(Number(item.opacity) || 100)/100));
+      if (entry.ready) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(entry.img,box.x,box.y,box.w,box.h); }
+      else { ctx.fillStyle = 'rgba(148,163,184,.5)'; ctx.fillRect(box.x,box.y,box.w,box.h); }
+      ctx.restore();
+      if (item.borderVisible !== false) ctx.strokeRect(box.x,box.y,box.w,box.h);
+    }
+    function annotationLoadOverlayFile(file) {
+      return new Promise((resolve,reject) => {
+        if (!file || !file.type.startsWith('image/')) { reject(new Error('Arquivo não é uma imagem.')); return; }
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          // Limita a figura a 1600 px para não pesar no projeto sincronizado.
+          const r = Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1,Math.round(img.naturalWidth*r)); c.height = Math.max(1,Math.round(img.naturalHeight*r));
+          const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+          const transparent = /png|webp|gif|svg/.test(file.type);
+          if (!transparent) { x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height); }
+          x.drawImage(img,0,0,c.width,c.height);
+          resolve({src:transparent ? c.toDataURL('image/png') : c.toDataURL('image/jpeg',0.9),w:c.width,h:c.height});
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível abrir a figura.')); };
+        img.src = url;
+      });
+    }
+    let annotationOverlayReplace = false;
+    async function annotationOverlayFromFile(file) {
+      if (!annotationState.ready) return;
+      try {
+        const data = await annotationLoadOverlayFile(file);
+        await annotationOverlayImage(data.src).promise;
+        const canvas = annotationState.canvas, selected = annotationSelected();
+        annotationRemember();
+        if (annotationOverlayReplace && selected?.tool === 'overlay') {
+          // Mantém posição e largura; ajusta a altura à nova proporção.
+          const box = annotationBounds(selected), h = box.w*data.h/data.w;
+          selected.src = data.src; selected.a = {x:box.x,y:box.y}; selected.b = {x:box.x+box.w,y:box.y+h};
+          annotationKeepInside(selected);
+        } else {
+          const scale = Math.min(canvas.width*0.35/data.w,canvas.height*0.35/data.h);
+          const w = data.w*scale, h = data.h*scale;
+          const item = {id:'mark-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),tool:'overlay',src:data.src,
+            a:{x:(canvas.width-w)/2,y:(canvas.height-h)/2},b:{x:(canvas.width+w)/2,y:(canvas.height+h)/2},
+            color:annotationState.color,width:Math.max(2,Math.round(annotationState.width/2)),borderVisible:true,opacity:100,keepRatio:true};
+          annotationState.objects.push(item); annotationState.selected = item.id;
+        }
+        annotationSetTool('select');
+      } catch (error) { alert(error.message || 'Não foi possível inserir a figura.'); }
+      finally { annotationOverlayReplace = false; }
+    }
+    function annotationSetOverlaySize(w,h) {
+      const item = annotationSelected(); if (item?.tool !== 'overlay') return;
+      const canvas = annotationState.canvas, box = annotationBounds(item);
+      w = Math.max(8,Math.min(canvas.width,w)); h = Math.max(8,Math.min(canvas.height,h));
+      annotationRemember();
+      item.a = {x:box.x,y:box.y}; item.b = {x:box.x+w,y:box.y+h};
+      annotationKeepInside(item); annotationSyncControls(); annotationRender();
+    }
     const annotationClone = value => JSON.parse(JSON.stringify(value));
     const annotationSelected = () => annotationState.objects.find(item => item.id === annotationState.selected);
     const annotationScreenUnit = () => annotationState.canvas.width / Math.max(1, annotationState.canvas.getBoundingClientRect().width);
@@ -2487,6 +2576,8 @@ License: bitstream-vera
         annotationDrawPatch(ctx,item);
       } else if (tool === 'magnifier') {
         annotationDrawMagnifier(ctx,item);
+      } else if (tool === 'overlay') {
+        annotationDrawOverlay(ctx,item);
       } else if (annotationIsStamp(tool)) {
         annotationDrawStamp(ctx,item);
       } else if (item.borderVisible === false) {
@@ -2574,6 +2665,14 @@ License: bitstream-vera
       $('annotationBorder').value = annotationState.borderVisible ? 'color' : 'none';
       $('annotationFontSize').value = Math.round(annotationState.fontSize);
       $('annotationMagnifierPanel').hidden = !(item?.tool === 'magnifier' || annotationState.tool === 'magnifier');
+      $('annotationOverlayPanel').hidden = item?.tool !== 'overlay';
+      if (item?.tool === 'overlay') {
+        const box = annotationBounds(item), op = Math.round(Number(item.opacity) || 100);
+        $('annotationOverlayOpacity').value = String(op); $('annotationOverlayOpacityValue').textContent = op+'%';
+        $('annotationOverlayRatio').value = item.keepRatio === false ? 'free' : 'keep';
+        if (document.activeElement !== $('annotationOverlayW')) $('annotationOverlayW').value = Math.round(box.w);
+        if (document.activeElement !== $('annotationOverlayH')) $('annotationOverlayH').value = Math.round(box.h);
+      }
       $('annotationMagnification').value = String(annotationState.magnification);
       const stampContext = annotationIsStamp(item) ? item.tool : annotationIsStamp(annotationState.tool) ? annotationState.tool : null;
       $('annotationStampPanel').hidden = !stampContext;
@@ -2648,6 +2747,7 @@ License: bitstream-vera
       if (item?.borderVisible === false && ['arrow','line','circle','rect'].includes(item.tool)) $('annotationSelectionStatus').textContent += ' Sem cor oculta o traço. Selecione pela lista e escolha Com cor para exibi-lo novamente.';
       if (annotationIsStamp(annotationState.tool)) $('annotationSelectionStatus').textContent = (annotationState.tool === 'check' ? 'Correto' : 'Incorreto')+': clique na foto para inserir o ícone ou arraste para definir o tamanho.';
       else if (annotationIsStamp(item)) $('annotationSelectionStatus').textContent = annotationNames[item.tool]+' selecionado. Arraste para mover; use as alças ou − / + para mudar o tamanho e as cores acima para trocar a cor.';
+      if (item?.tool === 'overlay') $('annotationSelectionStatus').textContent = 'Figura sobreposta selecionada. Arraste para mover; defina o tamanho pelas alças, por − / + ou digitando largura e altura.';
       if (annotationState.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa: arraste para delimitar o círculo ou clique no detalhe. Depois pressione Enter para congelar o detalhe e arraste a lupa.';
       else if (item?.tool === 'magnifier') $('annotationSelectionStatus').textContent = 'Lupa selecionada · '+annotationMagnification(item).toLocaleString('pt-BR')+'×. Pressione Enter para capturar este ponto; depois arraste a lupa para qualquer local sem alterar a imagem capturada.';
     }
@@ -2765,6 +2865,7 @@ License: bitstream-vera
       const image = new Image(); annotationState.image = image;
       image.onload = async () => {
         await annotationFontsReady;
+        await Promise.all(annotationState.objects.filter(object => object.tool === 'overlay' && object.src).map(object => annotationOverlayImage(object.src).promise));
         if (token !== annotationState.loadToken || !dialog.open) return;
         const ratio = Math.min(1,1280/Math.max(image.naturalWidth,image.naturalHeight));
         annotationState.canvas.width = (editable || legacyEditable) && saved.width > 0 ? saved.width : Math.max(1,Math.round(image.naturalWidth*ratio));
@@ -2881,7 +2982,16 @@ License: bitstream-vera
           Object.assign(item,annotationClone(drag.item));
           annotationScale(item,Math.max(width/Math.max(1,b.w),height/Math.max(1,b.h)));
           const next = annotationBounds(item); item.a = {x:west ? anchor.x-next.w : anchor.x,y:north ? anchor.y-next.h : anchor.y};
-        } else { item.a = {x:west ? anchor.x-width : anchor.x,y:north ? anchor.y-height : anchor.y}; item.b = {x:item.a.x+width,y:item.a.y+height}; }
+        } else {
+          let w = width, h = height;
+          if (item.tool === 'overlay' && item.keepRatio !== false) {
+            const ratio = Math.max(0.01,b.w/Math.max(1,b.h));
+            if (w/h > ratio) h = w/ratio; else w = h*ratio;
+            const limit = Math.min(1,(west ? anchor.x : annotationState.canvas.width-anchor.x)/w,(north ? anchor.y : annotationState.canvas.height-anchor.y)/h);
+            w *= limit; h *= limit;
+          }
+          item.a = {x:west ? anchor.x-w : anchor.x,y:north ? anchor.y-h : anchor.y}; item.b = {x:item.a.x+w,y:item.a.y+h};
+        }
         annotationKeepInside(item);
       }
       annotationRender();
@@ -2943,6 +3053,20 @@ License: bitstream-vera
     $('annotationCenterOnPhotoBtn').addEventListener('click',annotationCenterOnPhoto);
     $('annotationFontSmallerBtn').addEventListener('click',() => annotationStepFontSize(-4));
     $('annotationFontLargerBtn').addEventListener('click',() => annotationStepFontSize(4));
+    $('annotationOverlayBtn').addEventListener('click',() => { if (!annotationState.ready) return; annotationOverlayReplace = false; $('annotationOverlayInput').click(); });
+    $('annotationOverlayReplaceBtn').addEventListener('click',() => { annotationOverlayReplace = true; $('annotationOverlayInput').click(); });
+    $('annotationOverlayInput').addEventListener('change',async event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) await annotationOverlayFromFile(file); else annotationOverlayReplace = false; });
+    $('annotationOverlayOpacity').addEventListener('input',event => { $('annotationOverlayOpacityValue').textContent = event.target.value+'%'; const item = annotationSelected(); if (item?.tool === 'overlay') { item.opacity = Number(event.target.value); annotationRender(); } });
+    $('annotationOverlayOpacity').addEventListener('pointerdown',() => { if (annotationSelected()?.tool === 'overlay') annotationRemember(); });
+    $('annotationOverlayRatio').addEventListener('change',event => { const item = annotationSelected(); if (item?.tool === 'overlay') { annotationRemember(); item.keepRatio = event.target.value === 'keep'; annotationSyncControls(); } });
+    $('annotationOverlayW').addEventListener('change',event => {
+      const item = annotationSelected(), w = Number(event.target.value); if (item?.tool !== 'overlay' || !(w > 0)) { annotationSyncControls(); return; }
+      const box = annotationBounds(item); annotationSetOverlaySize(w,item.keepRatio === false ? box.h : w*box.h/Math.max(1,box.w));
+    });
+    $('annotationOverlayH').addEventListener('change',event => {
+      const item = annotationSelected(), h = Number(event.target.value); if (item?.tool !== 'overlay' || !(h > 0)) { annotationSyncControls(); return; }
+      const box = annotationBounds(item); annotationSetOverlaySize(item.keepRatio === false ? box.w : h*box.w/Math.max(1,box.h),h);
+    });
     $('annotationMagnification').addEventListener('change',event => annotationChangeStyle('magnification',annotationMagnification({magnification:event.target.value})));
     $('annotationObjectList').addEventListener('change',event => { const selected = event.target.value; annotationTextCommit(); annotationState.selected = selected || null; annotationState.tool = 'select'; annotationState.samplePicking = false; annotationSyncControls(); annotationSetTool('select'); });
     $('annotationFontFamily').addEventListener('change',event => annotationUpdateTextStyle('fontFamily',event.target.value));
